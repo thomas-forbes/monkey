@@ -423,3 +423,75 @@ func testBooleanLiteral(t *testing.T, exp ast.Expression, value bool) bool {
 	}
 	return true
 }
+
+func TestIfExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		branches []struct {
+			condition string
+			body      string
+		}
+	}{
+		{
+			"if (x < y) { x }",
+			[]struct{ condition, body string }{
+				{"(x < y)", "x"},
+			},
+		},
+		{
+			"if (x < y) { x } else { y }",
+			[]struct{ condition, body string }{
+				{"(x < y)", "x"},
+				{"true", "y"},
+			},
+		},
+		{
+			"if (x < y) { x } else if (y > x) { y } else { z }",
+			[]struct{ condition, body string }{
+				{"(x < y)", "x"},
+				{"(y > x)", "y"},
+				{"true", "z"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+				1, len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+				program.Statements[0])
+		}
+
+		exp, ok := stmt.Expression.(*ast.IfExpression)
+		if !ok {
+			t.Fatalf("stmt is not ast.IfExpression. got=%T", stmt.Expression)
+		}
+
+		if len(exp.Branches) != len(tt.branches) {
+			t.Fatalf("exp.Branches does not contain %d branches. got=%d\n",
+				len(tt.branches), len(exp.Branches))
+		}
+
+		for i, branch := range tt.branches {
+			expBranch := exp.Branches[i]
+			if expBranch.Condition != nil && expBranch.Condition.String() != branch.condition {
+				t.Errorf("exp.Branches[%d].Condition is not %s. got=%s",
+					i, branch.condition, exp.Branches[i].Condition.String())
+			}
+			if exp.Branches[i].Body.String() != branch.body {
+				t.Errorf("exp.Branches[%d].Body is not %s. got=%s",
+					i, branch.body, exp.Branches[i].Body.String())
+			}
+		}
+	}
+}
