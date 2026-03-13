@@ -442,7 +442,7 @@ func TestIfExpression(t *testing.T) {
 			"if (x < y) { x } else { y }",
 			[]struct{ condition, body string }{
 				{"(x < y)", "x"},
-				{"true", "y"},
+				{"", "y"},
 			},
 		},
 		{
@@ -450,7 +450,7 @@ func TestIfExpression(t *testing.T) {
 			[]struct{ condition, body string }{
 				{"(x < y)", "x"},
 				{"(y > x)", "y"},
-				{"true", "z"},
+				{"", "z"},
 			},
 		},
 	}
@@ -484,10 +484,16 @@ func TestIfExpression(t *testing.T) {
 
 		for i, branch := range tt.branches {
 			expBranch := exp.Branches[i]
-			if expBranch.Condition != nil && expBranch.Condition.String() != branch.condition {
+			if expBranch.Condition == nil {
+				if branch.condition != "" {
+					t.Errorf("exp.Branches[%d].Condition is not %s. got=nil",
+						i, branch.condition)
+				}
+			} else if expBranch.Condition.String() != branch.condition {
 				t.Errorf("exp.Branches[%d].Condition is not %s. got=%s",
 					i, branch.condition, exp.Branches[i].Condition.String())
 			}
+
 			if exp.Branches[i].Body.String() != branch.body {
 				t.Errorf("exp.Branches[%d].Body is not %s. got=%s",
 					i, branch.body, exp.Branches[i].Body.String())

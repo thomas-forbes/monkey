@@ -171,11 +171,14 @@ func (ie *IfExpression) String() string {
 	var out bytes.Buffer
 	out.WriteString("if")
 	for i, branch := range ie.Branches {
-		if i == len(ie.Branches) {
-			out.WriteString("else")
+		if i == len(ie.Branches)-1 {
+			out.WriteString(" else")
 		} else {
 			if i > 0 {
-				out.WriteString("if else")
+				out.WriteString(" if else")
+			}
+			if branch.Condition == nil {
+				panic("unexpected nil condition in if branch")
 			}
 			out.WriteString(" (" + branch.Condition.String() + ")")
 		}
