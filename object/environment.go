@@ -28,7 +28,7 @@ func (e *Environment) Get(name string) (Entity, bool) {
 	}
 	return pair, ok
 }
-func (e *Environment) Set(name string, val Object) (Entity, bool) {
-	e.store[name] = Entity{Object: val}
+func (e *Environment) Set(name string, val Object, mutable bool) (Entity, bool) {
+	e.store[name] = Entity{Object: val, Mutable: mutable}
 	return e.Get(name)
 }

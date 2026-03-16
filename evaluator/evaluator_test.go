@@ -227,6 +227,10 @@ if (10 > 1) {
 			`{"name": "Monkey"}[fn(x) { x }];`,
 			"unusable as hash key: FUNCTION",
 		},
+		{
+			`let a = 5; let a = 3;`,
+			"cannot reinitialize variable: a",
+		},
 	}
 
 	for _, tt := range tests {

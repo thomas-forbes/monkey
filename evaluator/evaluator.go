@@ -24,12 +24,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
 	case *ast.LetStatement:
-		val := Eval(node.Value, env)
-		if IsError(val) {
-			return val
-		}
-		env.Set(node.Name.Value, val)
-		return nil
+		return evalLetStatement(node, env)
 
 	// expressions
 	case *ast.ReturnStatement:
@@ -315,7 +310,7 @@ func extendFunctionEnv(
 ) *object.Environment {
 	env := object.NewEnclosedEnvironment(fn.Env)
 	for paramIdx, param := range fn.Parameters {
-		env.Set(param.Value, args[paramIdx])
+		env.Set(param.Value, args[paramIdx], false)
 	}
 	return env
 }
@@ -385,4 +380,17 @@ func evalHashIndexExpression(hash, index object.Object) object.Object {
 		return NULL
 	}
 	return pair.Value
+}
+
+func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Object {
+	val := Eval(node.Value, env)
+	if IsError(val) {
+		return val
+	}
+	name := node.Name.Value
+	if _, ok := env.Get(name); ok {
+		return newError("cannot reinitialize variable: %s", name)
+	}
+	env.Set(name, val, node.Mutable)
+	return nil
 }
