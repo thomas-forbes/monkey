@@ -76,6 +76,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return right
 		}
 		return evalInfixExpression(node.Operator, left, right)
+	case *ast.AssignmentExpression:
+		return evalAssignmentExpression(node, env)
 	case *ast.FunctionLiteral:
 		params := node.Parameters
 		body := node.Body
@@ -393,4 +395,21 @@ func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Ob
 	}
 	env.Set(name, val, node.Mutable)
 	return nil
+}
+
+func evalAssignmentExpression(node *ast.AssignmentExpression, env *object.Environment) object.Object {
+	val := Eval(node.Value, env)
+	if IsError(val) {
+		return val
+	}
+	name := node.Name.Value
+	entity, ok := env.Get(name)
+	if !ok {
+		return newError("undefined variable: %s", name)
+	}
+	if !entity.Mutable {
+		return newError("cannot reassign unmutable variable: %s", name)
+	}
+	env.Set(name, val, true)
+	return val
 }

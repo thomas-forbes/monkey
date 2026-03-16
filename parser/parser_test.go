@@ -12,10 +12,11 @@ func TestLetStatements(t *testing.T) {
 		input              string
 		expectedIdentifier string
 		expectedValue      interface{}
+		expectedMutable    bool
 	}{
-		{"let x = 5;", "x", 5},
-		{"let y = true;", "y", true},
-		{"let foobar = y;", "foobar", "y"},
+		{"let x = 5;", "x", 5, false},
+		{"let mut y = true;", "y", true, true},
+		{"let foobar = y;", "foobar", "y", false},
 	}
 	for _, tt := range tests {
 		l := lexer.New(tt.input)
@@ -32,6 +33,10 @@ func TestLetStatements(t *testing.T) {
 		val := stmt.(*ast.LetStatement).Value
 		if !testLiteralExpression(t, val, tt.expectedValue) {
 			return
+		}
+		mutable := stmt.(*ast.LetStatement).Mutable
+		if mutable != tt.expectedMutable {
+			t.Errorf("stmt.Mutable not %t. got=%t", tt.expectedMutable, mutable)
 		}
 	}
 }
@@ -266,6 +271,32 @@ func TestParsingInfixExpressions(t *testing.T) {
 	}
 }
 
+func TestAssignmentExpression(t *testing.T) {
+	input := "x = 5;"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d\n", 1, len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T",
+			program.Statements[0])
+	}
+	exp, ok := stmt.Expression.(*ast.AssignmentExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression is not ast.AssignmentExpression. got=%T", stmt.Expression)
+	}
+	if !testIdentifier(t, exp.Name, "x") {
+		return
+	}
+	if !testLiteralExpression(t, exp.Value, 5) {
+		return
+	}
+}
+
 func TestOperatorPrecedenceParsing(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -354,6 +385,10 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{
 			"a * [1, 2, 3, 4][b * c] * d",
 			"((a * ([1, 2, 3, 4][(b * c)])) * d)",
+		},
+		{
+			"a = [1, 2, 3, 4][b * c] * d",
+			"a = (([1, 2, 3, 4][(b * c)]) * d)",
 		},
 		{
 			"add(a * b[2], b[1], 2 * [1, 2][1])",

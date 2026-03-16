@@ -40,6 +40,7 @@ const (
 	// Keywords
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
+	MUT      = "MUT"
 	TRUE     = "TRUE"
 	FALSE    = "FALSE"
 	IF       = "if"
@@ -60,6 +61,7 @@ var keywords = map[string]TokenType{
 	"if":     IF,
 	"else":   ELSE,
 	"return": RETURN,
+	"mut":    MUT,
 }
 
 func LookupIdentifier(identifier string) TokenType {

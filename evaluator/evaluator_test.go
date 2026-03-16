@@ -231,6 +231,10 @@ if (10 > 1) {
 			`let a = 5; let a = 3;`,
 			"cannot reinitialize variable: a",
 		},
+		{
+			`let a = 5; a = 3;`,
+			"cannot reassign unmutable variable: a",
+		},
 	}
 
 	for _, tt := range tests {
@@ -257,6 +261,7 @@ func TestLetStatements(t *testing.T) {
 		{"let a = 5 * 5; a;", 25},
 		{"let a = 5; let b = a; b;", 5},
 		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+		{"let mut a = 5; a = 3;", 3},
 	}
 	for _, tt := range tests {
 		testIntegerObject(t, testEval(tt.input), tt.expected)

@@ -11,6 +11,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	ASSIGN      // =
 	EQUALS      // ==
 	LESSGREATER // > or <
 	SUM         // +
@@ -21,6 +22,7 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.ASSIGN:     ASSIGN,
 	token.EQUALS:     EQUALS,
 	token.NOT_EQUALS: EQUALS,
 	token.LESS:       LESSGREATER,
@@ -72,6 +74,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NOT_EQUALS, p.parseInfixExpression)
 	p.registerInfix(token.LESS, p.parseInfixExpression)
 	p.registerInfix(token.GREATER, p.parseInfixExpression)
+	p.registerInfix(token.ASSIGN, p.parseAssignExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
 
@@ -137,10 +140,16 @@ func (p *Parser) parseStatement() ast.Statement {
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt := &ast.LetStatement{Token: p.curToken}
+	if p.peekTokenIs(token.MUT) {
+		stmt.Mutable = true
+		p.nextToken()
+	}
+
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
 	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
 	}
@@ -272,6 +281,23 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	precedence := p.curPrecedence()
 	p.nextToken()
 	expression.Right = p.parseExpression(precedence)
+	return expression
+}
+
+func (p *Parser) parseAssignExpression(left ast.Expression) ast.Expression {
+	ident, ok := left.(*ast.Identifier)
+	if !ok {
+		msg := fmt.Sprintf("expected left-hand side of assignment to be identifier, got %T", left)
+		p.errors = append(p.errors, msg)
+		return nil
+	}
+	expression := &ast.AssignmentExpression{
+		Token: p.curToken,
+		Name:  ident,
+	}
+	precedence := p.curPrecedence()
+	p.nextToken()
+	expression.Value = p.parseExpression(precedence)
 	return expression
 }
 

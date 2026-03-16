@@ -148,6 +148,21 @@ func (ie *InfixExpression) String() string {
 	return out.String()
 }
 
+type AssignmentExpression struct {
+	Token token.Token // The '=' token
+	Name  *Identifier
+	Value Expression
+}
+
+func (ae *AssignmentExpression) expressionNode()      {}
+func (ae *AssignmentExpression) TokenLiteral() string { return ae.Token.Literal }
+func (ae *AssignmentExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString(ae.Name.String() + " = ")
+	out.WriteString(ae.Value.String())
+	return out.String()
+}
+
 type Boolean struct {
 	Token token.Token
 	Value bool
