@@ -272,8 +272,8 @@ func evalIdentifier(
 	node *ast.Identifier,
 	env *object.Environment,
 ) object.Object {
-	if val, ok := env.Get(node.Value); ok {
-		return val
+	if entity, ok := env.Get(node.Value); ok {
+		return entity.Object
 	}
 	if builtin, ok := builtins[node.Value]; ok {
 		return builtin

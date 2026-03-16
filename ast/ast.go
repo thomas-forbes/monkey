@@ -43,9 +43,10 @@ func (p *Program) String() string {
 }
 
 type LetStatement struct {
-	Token token.Token // the token.LET token
-	Name  *Identifier
-	Value Expression
+	Token   token.Token // the token.LET token
+	Name    *Identifier
+	Mutable bool
+	Value   Expression
 }
 
 func (ls *LetStatement) statementNode()       {}
