@@ -25,7 +25,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIfExpression(node, env)
 	case *ast.LetStatement:
 		val := Eval(node.Value, env)
-		if isError(val) {
+		if IsError(val) {
 			return val
 		}
 		env.Set(node.Name.Value, val)
@@ -34,7 +34,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	// expressions
 	case *ast.ReturnStatement:
 		val := Eval(node.ReturnValue, env)
-		if isError(val) {
+		if IsError(val) {
 			return val
 		}
 		return &object.ReturnValue{Value: val}
@@ -50,34 +50,34 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalHashLiteral(node, env)
 	case *ast.ArrayLiteral:
 		elements := evalExpressions(node.Elements, env)
-		if len(elements) == 1 && isError(elements[0]) {
+		if len(elements) == 1 && IsError(elements[0]) {
 			return elements[0]
 		}
 		return &object.Array{Elements: elements}
 	case *ast.IndexExpression:
 		left := Eval(node.Left, env)
-		if isError(left) {
+		if IsError(left) {
 			return left
 		}
 		index := Eval(node.Index, env)
-		if isError(index) {
+		if IsError(index) {
 			return index
 		}
 		return evalIndexExpression(left, index)
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
-		if isError(right) {
+		if IsError(right) {
 			return right
 		}
 		return evalPrefixExpression(node.Operator, right)
 	case *ast.InfixExpression:
 		left := Eval(node.Left, env)
-		if isError(left) {
+		if IsError(left) {
 			return left
 		}
 
 		right := Eval(node.Right, env)
-		if isError(right) {
+		if IsError(right) {
 			return right
 		}
 		return evalInfixExpression(node.Operator, left, right)
@@ -87,11 +87,11 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Function{Parameters: params, Env: env, Body: body}
 	case *ast.CallExpression:
 		function := Eval(node.Function, env)
-		if isError(function) {
+		if IsError(function) {
 			return function
 		}
 		args := evalExpressions(node.Arguments, env)
-		if len(args) == 1 && isError(args[0]) {
+		if len(args) == 1 && IsError(args[0]) {
 			return args[0]
 		}
 		return applyFunction(function, args)
@@ -234,7 +234,7 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 		}
 
 		condition := Eval(branch.Condition, env)
-		if isError(condition) {
+		if IsError(condition) {
 			return condition
 		}
 		if isTruthy(condition) {
@@ -261,7 +261,7 @@ func newError(format string, a ...interface{}) *object.Error {
 	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }
 
-func isError(obj object.Object) bool {
+func IsError(obj object.Object) bool {
 	if obj != nil {
 		return obj.Type() == object.ERROR_OBJ
 	}
@@ -288,7 +288,7 @@ func evalExpressions(
 	var result []object.Object
 	for _, e := range exps {
 		evaluated := Eval(e, env)
-		if isError(evaluated) {
+		if IsError(evaluated) {
 			return []object.Object{evaluated}
 		}
 		result = append(result, evaluated)
@@ -357,7 +357,7 @@ func evalHashLiteral(
 	pairs := make(map[object.HashKey]object.HashPair)
 	for keyNode, valueNode := range node.Pairs {
 		key := Eval(keyNode, env)
-		if isError(key) {
+		if IsError(key) {
 			return key
 		}
 		hashKey, ok := key.(object.Hashable)
@@ -365,7 +365,7 @@ func evalHashLiteral(
 			return newError("unusable as hash key: %s", key.Type())
 		}
 		value := Eval(valueNode, env)
-		if isError(value) {
+		if IsError(value) {
 			return value
 		}
 		hashed := hashKey.HashKey()
