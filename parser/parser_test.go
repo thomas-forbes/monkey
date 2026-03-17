@@ -842,12 +842,12 @@ func TestMultiStatementProgram(t *testing.T) {
 	}
 }
 
-func TestForIterableStatement(t *testing.T) {
+func TestForRangeStatement(t *testing.T) {
 	tests := []struct {
 		input           string
 		indexIdentifier string
 		valueIdentifier string
-		iterableString  string
+		rangeString     string
 		bodyString      string
 	}{
 		{
@@ -890,7 +890,7 @@ func TestForIterableStatement(t *testing.T) {
 
 		clause, ok := stmt.Clause.(*ast.ForInClause)
 		if !ok {
-			t.Fatalf("stmt.Clause is not ast.ForIterableClause. got=%T", stmt.Clause)
+			t.Fatalf("stmt.Clause is not ast.ForRangeClause. got=%T", stmt.Clause)
 		}
 
 		if !testIdentifier(t, clause.Index, tt.indexIdentifier) {
@@ -903,8 +903,8 @@ func TestForIterableStatement(t *testing.T) {
 			t.Errorf("stmt.Value should be nil. got=%T", clause.Value)
 		}
 
-		if clause.Iterable.String() != tt.iterableString {
-			t.Errorf("stmt.Iterable.String() not %q. got=%q", tt.iterableString, clause.Iterable.String())
+		if clause.Iterable.String() != tt.rangeString {
+			t.Errorf("stmt.Range.String() not %q. got=%q", tt.rangeString, clause.Iterable.String())
 		}
 
 		if stmt.Body.String() != tt.bodyString {
@@ -913,7 +913,7 @@ func TestForIterableStatement(t *testing.T) {
 	}
 }
 
-func TestIterableExpression(t *testing.T) {
+func TestRangeExpression(t *testing.T) {
 	tests := []struct {
 		input       string
 		leftString  string
@@ -948,7 +948,7 @@ func TestIterableExpression(t *testing.T) {
 
 		exp, ok := stmt.Expression.(*ast.IterableExpression)
 		if !ok {
-			t.Fatalf("stmt.Expression is not ast.IterableExpression. got=%T", stmt.Expression)
+			t.Fatalf("stmt.Expression is not ast.RangeExpression. got=%T", stmt.Expression)
 		}
 
 		if exp.Left.String() != tt.leftString {

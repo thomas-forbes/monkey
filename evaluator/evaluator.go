@@ -446,7 +446,7 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 		}
 	case *object.Iterable:
 		if valueName != nil {
-			return newError("cannot assign value in for-in loop without array iterable")
+			return newError("cannot assign value in for-in loop without array range")
 		}
 
 		var increment int64 = 1
@@ -475,7 +475,7 @@ func evalIterableExpression(node *ast.IterableExpression, env *object.Environmen
 	}
 	leftInt, ok := left.(*object.Integer)
 	if !ok {
-		return newError("left side of iterable expression must be an integer, got %s", left.Type())
+		return newError("left side of range expression must be an integer, got %s", left.Type())
 	}
 	right := Eval(node.Right, env)
 	if IsError(right) {
@@ -483,7 +483,7 @@ func evalIterableExpression(node *ast.IterableExpression, env *object.Environmen
 	}
 	rightInt, ok := right.(*object.Integer)
 	if !ok {
-		return newError("right side of iterable expression must be an integer, got %s", right.Type())
+		return newError("right side of range expression must be an integer, got %s", right.Type())
 	}
 	return &object.Iterable{Right: rightInt.Value, Left: leftInt.Value}
 }
