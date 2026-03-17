@@ -496,7 +496,7 @@ func (p *Parser) parseForStatement() *ast.ForStatement {
 }
 
 func (p *Parser) parseIterateExpression(left ast.Expression) ast.Expression {
-	expression := &ast.IterableExpression{
+	expression := &ast.RangeExpression{
 		Token: p.curToken,
 		Left:  left,
 	}

@@ -88,8 +88,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return args[0]
 		}
 		return applyFunction(function, args)
-	case *ast.IterableExpression:
-		return evalIterableExpression(node, env)
+	case *ast.RangeExpression:
+		return evalRangeExpression(node, env)
 	}
 	return nil
 }
@@ -444,7 +444,7 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 				return result
 			}
 		}
-	case *object.Iterable:
+	case *object.Range:
 		if valueName != nil {
 			return newError("cannot assign value in for-in loop without array range")
 		}
@@ -468,7 +468,7 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 	return nil
 }
 
-func evalIterableExpression(node *ast.IterableExpression, env *object.Environment) object.Object {
+func evalRangeExpression(node *ast.RangeExpression, env *object.Environment) object.Object {
 	left := Eval(node.Left, env)
 	if IsError(left) {
 		return left
@@ -485,5 +485,5 @@ func evalIterableExpression(node *ast.IterableExpression, env *object.Environmen
 	if !ok {
 		return newError("right side of range expression must be an integer, got %s", right.Type())
 	}
-	return &object.Iterable{Right: rightInt.Value, Left: leftInt.Value}
+	return &object.Range{Right: rightInt.Value, Left: leftInt.Value}
 }

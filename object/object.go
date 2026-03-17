@@ -21,7 +21,7 @@ const (
 	BUILTIN_OBJ      = "BUILTIN"
 	ARRAY_OBJ        = "ARRAY"
 	HASH_OBJ         = "HASH"
-	ITERABLE_OBJ     = "ITERABLE"
+	RANGE_OBJ        = "RANGE"
 )
 
 var (
@@ -175,10 +175,10 @@ func (h *Hash) Inspect() string {
 	return out.String()
 }
 
-type Iterable struct {
+type Range struct {
 	Right int64
 	Left  int64
 }
 
-func (i *Iterable) Type() ObjectType { return ITERABLE_OBJ }
-func (i *Iterable) Inspect() string  { return fmt.Sprintf("%d..%d", i.Right, i.Left) }
+func (i *Range) Type() ObjectType { return RANGE_OBJ }
+func (i *Range) Inspect() string  { return fmt.Sprintf("%d..%d", i.Right, i.Left) }

@@ -382,15 +382,15 @@ func (fs *ForStatement) String() string {
 	return out.String()
 }
 
-type IterableExpression struct {
+type RangeExpression struct {
 	Token token.Token // The '..' token
 	Left  Expression
 	Right Expression
 }
 
-func (it *IterableExpression) expressionNode()      {}
-func (it *IterableExpression) TokenLiteral() string { return it.Token.Literal }
-func (it *IterableExpression) String() string {
+func (it *RangeExpression) expressionNode()      {}
+func (it *RangeExpression) TokenLiteral() string { return it.Token.Literal }
+func (it *RangeExpression) String() string {
 	var out bytes.Buffer
 	out.WriteString(it.Left.String())
 	out.WriteString("..")

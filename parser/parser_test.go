@@ -946,7 +946,7 @@ func TestRangeExpression(t *testing.T) {
 			t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
 		}
 
-		exp, ok := stmt.Expression.(*ast.IterableExpression)
+		exp, ok := stmt.Expression.(*ast.RangeExpression)
 		if !ok {
 			t.Fatalf("stmt.Expression is not ast.RangeExpression. got=%T", stmt.Expression)
 		}
