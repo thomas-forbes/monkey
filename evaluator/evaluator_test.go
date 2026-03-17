@@ -592,6 +592,18 @@ func TestForStatement(t *testing.T) {
 			8,
 		},
 		{
+			`let a = {1: 2, 3: 4, 5: 6}; let mut sum = 0; for k, v in a { sum = sum + k * v }; sum;`,
+			44,
+		},
+		{
+			`let a = {1: 2, 3: 4, 5: 6}; let mut sum = 0; for _, v in a { sum = sum + v }; sum;`,
+			12,
+		},
+		{
+			`let a = {1: 2, 3: 4, 5: 6}; let mut sum = 0; for k in a { sum = sum + k }; sum;`,
+			9,
+		},
+		{
 			`let mut sum = 0; for i in 0..5 { sum = sum + i }; sum;`,
 			10,
 		},

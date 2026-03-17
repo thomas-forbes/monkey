@@ -476,7 +476,7 @@ func (p *Parser) parseForStatement() *ast.ForStatement {
 	} else if len(bindings) == 2 {
 		clause.Value = bindings[1]
 	}
-	clause.Index = bindings[0]
+	clause.Key = bindings[0]
 
 	if !p.expectCurTokenIs(token.IN) {
 		return nil

@@ -424,7 +424,7 @@ func evalForStatement(node *ast.ForStatement, env *object.Environment) object.Ob
 }
 
 func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *object.Environment) object.Object {
-	indexName := clause.Index.Value
+	keyName := clause.Key.Value
 	var valueName *string = nil
 	if clause.Value != nil {
 		valueName = &clause.Value.Value
@@ -434,9 +434,22 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 	case *object.Array:
 		for index, value := range iter.Elements {
 			loopEnv := object.NewEnclosedEnvironment(env)
-			loopEnv.Set(indexName, &object.Integer{Value: int64(index)}, false, true)
+			loopEnv.Set(keyName, &object.Integer{Value: int64(index)}, false, true)
 			if valueName != nil {
 				loopEnv.Set(*valueName, value, false, true)
+			}
+
+			result := Eval(node.Body, loopEnv)
+			if IsError(result) {
+				return result
+			}
+		}
+	case *object.Hash:
+		for _, pair := range iter.Pairs {
+			loopEnv := object.NewEnclosedEnvironment(env)
+			loopEnv.Set(keyName, pair.Key, false, true)
+			if valueName != nil {
+				loopEnv.Set(*valueName, pair.Value, false, true)
 			}
 
 			result := Eval(node.Body, loopEnv)
@@ -456,7 +469,7 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 
 		for index := iter.Left; (increment < 0 && index > iter.Right) || (increment > 0 && index < iter.Right); index = index + increment {
 			loopEnv := object.NewEnclosedEnvironment(env)
-			loopEnv.Set(indexName, &object.Integer{Value: int64(index)}, false, true)
+			loopEnv.Set(keyName, &object.Integer{Value: int64(index)}, false, true)
 
 			result := Eval(node.Body, loopEnv)
 			if IsError(result) {

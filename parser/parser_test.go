@@ -893,7 +893,7 @@ func TestForRangeStatement(t *testing.T) {
 			t.Fatalf("stmt.Clause is not ast.ForRangeClause. got=%T", stmt.Clause)
 		}
 
-		if !testIdentifier(t, clause.Index, tt.indexIdentifier) {
+		if !testIdentifier(t, clause.Key, tt.indexIdentifier) {
 			return
 		}
 

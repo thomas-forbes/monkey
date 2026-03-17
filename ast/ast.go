@@ -333,7 +333,7 @@ type ForControlClause interface {
 }
 
 type ForInClause struct {
-	Index    *Identifier
+	Key      *Identifier
 	Value    *Identifier
 	Iterable Expression
 }
@@ -341,11 +341,11 @@ type ForInClause struct {
 func (fic *ForInClause) forControlClause() {}
 func (fic *ForInClause) String() string {
 	var out bytes.Buffer
-	if fic.Index != nil {
-		out.WriteString(fic.Index.String())
+	if fic.Key != nil {
+		out.WriteString(fic.Key.String())
 	}
 	if fic.Value != nil {
-		if fic.Index != nil {
+		if fic.Key != nil {
 			out.WriteString(", ")
 		}
 		out.WriteString(fic.Value.String())
