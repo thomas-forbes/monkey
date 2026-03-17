@@ -144,12 +144,42 @@ func TestIfElseExpressions(t *testing.T) {
 		}
 	}
 }
+
 func testNullObject(t *testing.T, obj object.Object) bool {
-	if obj != NULL {
+	if obj != object.NULL {
 		t.Errorf("object is not NULL. got=%T (%+v)", obj, obj)
 		return false
 	}
 	return true
+}
+
+func testStringObject(t *testing.T, obj object.Object, expected string) bool {
+	result, ok := obj.(*object.String)
+	if !ok {
+		t.Errorf("object is not String. got=%T (%+v)", obj, obj)
+		return false
+	}
+	if result.Value != expected {
+		t.Errorf("object has wrong value. got=%q, want=%q", result.Value, expected)
+		return false
+	}
+	return true
+}
+
+func testLiteralObject(t *testing.T, actual object.Object, expected interface{}) bool {
+	switch expected := expected.(type) {
+	case int:
+		return testIntegerObject(t, actual, int64(expected))
+	case string:
+		return testStringObject(t, actual, expected)
+	case bool:
+		return testBooleanObject(t, actual, expected)
+	case nil:
+		return testNullObject(t, actual)
+	default:
+		t.Errorf("type of object not handled. got=%T (%+v)", actual, actual)
+		return false
+	}
 }
 
 func TestReturnStatements(t *testing.T) {
@@ -257,16 +287,17 @@ if (10 > 1) {
 func TestLetStatements(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected int64
+		expected interface{}
 	}{
 		{"let a = 5; a;", 5},
 		{"let a = 5 * 5; a;", 25},
 		{"let a = 5; let b = a; b;", 5},
 		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
 		{"let mut a = 5; a = 3;", 3},
+		{"let _ = 5; _;", nil},
 	}
 	for _, tt := range tests {
-		testIntegerObject(t, testEval(tt.input), tt.expected)
+		testLiteralObject(t, testEval(tt.input), tt.expected)
 	}
 }
 
@@ -468,8 +499,8 @@ false: 6
 		(&object.String{Value: "two"}).HashKey():   2,
 		(&object.String{Value: "three"}).HashKey(): 3,
 		(&object.Integer{Value: 4}).HashKey():      4,
-		TRUE.HashKey():                             5,
-		FALSE.HashKey():                            6,
+		object.TRUE.HashKey():                      5,
+		object.FALSE.HashKey():                     6,
 	}
 	if len(result.Pairs) != len(expected) {
 		t.Fatalf("Hash has wrong num of pairs. got=%d", len(result.Pairs))
@@ -525,5 +556,45 @@ func TestHashIndexExpressions(t *testing.T) {
 		} else {
 			testNullObject(t, evaluated)
 		}
+	}
+}
+
+func TestAssignmentExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{"let mut a = 5; a = 3; a;", 3},
+		{"let mut a = 5; let b = a; a = 3; b;", 5},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		testIntegerObject(t, evaluated, tt.expected)
+	}
+}
+
+func TestForStatement(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{
+			`let a = [1, 2, 3]; let mut sum = 0; for i in a { sum = sum + i }; sum;`,
+			3,
+		},
+		{
+			`let a = [1, 2, 3]; let mut sum = 0; for _, x in a { sum = sum + x }; sum;`,
+			6,
+		},
+		{
+			`let a = [1, 2, 3]; let mut sum = 0; for i, x in a { sum = sum + x * i }; sum;`,
+			8,
+		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		testIntegerObject(t, evaluated, tt.expected)
 	}
 }

@@ -23,6 +23,12 @@ const (
 	HASH_OBJ         = "HASH"
 )
 
+var (
+	NULL  = &Null{}
+	TRUE  = &Boolean{Value: true}
+	FALSE = &Boolean{Value: false}
+)
+
 type Object interface {
 	Type() ObjectType
 	Inspect() string

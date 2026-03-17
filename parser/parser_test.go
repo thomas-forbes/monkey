@@ -840,5 +840,71 @@ func TestMultiStatementProgram(t *testing.T) {
 			}
 		}
 	}
+}
 
+func TestForStatement(t *testing.T) {
+	tests := []struct {
+		input           string
+		indexIdentifier string
+		valueIdentifier string
+		iterableString  string
+		bodyString      string
+	}{
+		{
+			"for i, x in myArray { x }",
+			"i",
+			"x",
+			"myArray",
+			"x",
+		},
+		{
+			"for _, x in range(5) { return x; }",
+			"_",
+			"x",
+			"range(5)",
+			"return x;",
+		},
+		{
+			"for i in range(4 + 4) { x = x + i; }",
+			"i",
+			"",
+			"range((4 + 4))",
+			"x = (x + i)",
+		},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+				1, len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ForStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.ForStatement. got=%T",
+				program.Statements[0])
+		}
+
+		if !testIdentifier(t, stmt.Index, tt.indexIdentifier) {
+			return
+		}
+
+		if len(tt.valueIdentifier) > 0 && !testIdentifier(t, stmt.Value, tt.valueIdentifier) {
+			return
+		} else if len(tt.valueIdentifier) == 0 && stmt.Value != nil {
+			t.Errorf("stmt.Value should be nil. got=%T", stmt.Value)
+		}
+
+		if stmt.Iterable.String() != tt.iterableString {
+			t.Errorf("stmt.Iterable.String() not %q. got=%q", tt.iterableString, stmt.Iterable.String())
+		}
+
+		if stmt.Body.String() != tt.bodyString {
+			t.Errorf("stmt.Body.String() not %q. got=%q", tt.bodyString, stmt.Body.String())
+		}
+	}
 }

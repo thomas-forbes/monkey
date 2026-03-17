@@ -21,14 +21,33 @@ type Environment struct {
 	outer *Environment
 }
 
-func (e *Environment) Get(name string) (Entity, bool) {
+const NULL_NAME = "_"
+
+var NULL_ENTITY = &Entity{Object: NULL, Mutable: false}
+
+func (e *Environment) Get(name string) (*Entity, bool) {
+	if name == NULL_NAME {
+		return NULL_ENTITY, true
+	}
 	pair, ok := e.store[name]
 	if !ok && e.outer != nil {
 		return e.outer.Get(name)
 	}
-	return pair, ok
+	return &pair, ok
 }
-func (e *Environment) Set(name string, val Object, mutable bool) (Entity, bool) {
-	e.store[name] = Entity{Object: val, Mutable: mutable}
-	return e.Get(name)
+
+func (e *Environment) Set(name string, val Object, mutable bool, initialize bool) (*Entity, bool) {
+	if name == NULL_NAME {
+		return NULL_ENTITY, true
+	}
+
+	if _, ok := e.store[name]; ok || initialize {
+		entity := Entity{Object: val, Mutable: mutable}
+		e.store[name] = entity
+		return &entity, true
+	} else if e.outer != nil {
+		return e.outer.Set(name, val, mutable, false)
+	} else {
+		return nil, false
+	}
 }

@@ -48,6 +48,8 @@ const (
 	IF       = "if"
 	ELSE     = "else"
 	RETURN   = "return"
+	FOR      = "FOR"
+	IN       = "IN"
 )
 
 type Token struct {
@@ -68,6 +70,8 @@ var keywords = map[string]TokenType{
 	"else":   ELSE,
 	"return": RETURN,
 	"mut":    MUT,
+	"for":    FOR,
+	"in":     IN,
 }
 
 func LookupIdentifier(identifier string) TokenType {

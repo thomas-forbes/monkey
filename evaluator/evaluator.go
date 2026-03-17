@@ -6,12 +6,6 @@ import (
 	"monkey/object"
 )
 
-var (
-	NULL  = &object.Null{}
-	TRUE  = &object.Boolean{Value: true}
-	FALSE = &object.Boolean{Value: false}
-)
-
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	// statements
@@ -25,6 +19,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIfExpression(node, env)
 	case *ast.LetStatement:
 		return evalLetStatement(node, env)
+	case *ast.ForStatement:
+		return evalForStatement(node, env)
 
 	// expressions
 	case *ast.ReturnStatement:
@@ -127,9 +123,9 @@ func evalProgram(program *ast.Program, env *object.Environment) object.Object {
 
 func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	if input {
-		return TRUE
+		return object.TRUE
 	}
-	return FALSE
+	return object.FALSE
 }
 
 func evalPrefixExpression(operator string, right object.Object) object.Object {
@@ -145,14 +141,14 @@ func evalPrefixExpression(operator string, right object.Object) object.Object {
 
 func evalBangOperatorExpression(right object.Object) object.Object {
 	switch right {
-	case TRUE:
-		return FALSE
-	case FALSE:
-		return TRUE
-	case NULL:
-		return TRUE
+	case object.TRUE:
+		return object.FALSE
+	case object.FALSE:
+		return object.TRUE
+	case object.NULL:
+		return object.TRUE
 	default:
-		return FALSE
+		return object.FALSE
 	}
 }
 
@@ -238,16 +234,16 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 			return Eval(branch.Body, env)
 		}
 	}
-	return NULL
+	return object.NULL
 }
 
 func isTruthy(obj object.Object) bool {
 	switch obj {
-	case NULL:
+	case object.NULL:
 		return false
-	case TRUE:
+	case object.TRUE:
 		return true
-	case FALSE:
+	case object.FALSE:
 		return false
 	default:
 		return true
@@ -312,7 +308,7 @@ func extendFunctionEnv(
 ) *object.Environment {
 	env := object.NewEnclosedEnvironment(fn.Env)
 	for paramIdx, param := range fn.Parameters {
-		env.Set(param.Value, args[paramIdx], false)
+		env.Set(param.Value, args[paramIdx], false, true)
 	}
 	return env
 }
@@ -342,7 +338,7 @@ func evalArrayIndexExpression(array, index object.Object) object.Object {
 		idx = idx + max + 1
 	}
 	if idx < 0 || idx > max {
-		return NULL
+		return object.NULL
 	}
 	return arrayObject.Elements[idx]
 }
@@ -379,7 +375,7 @@ func evalHashIndexExpression(hash, index object.Object) object.Object {
 	}
 	pair, ok := hashObject.Pairs[key.HashKey()]
 	if !ok {
-		return NULL
+		return object.NULL
 	}
 	return pair.Value
 }
@@ -390,10 +386,10 @@ func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Ob
 		return val
 	}
 	name := node.Name.Value
-	if _, ok := env.Get(name); ok {
+	if entity, ok := env.Get(name); ok && entity != object.NULL_ENTITY {
 		return newError("cannot reinitialize variable: %s", name)
 	}
-	env.Set(name, val, node.Mutable)
+	env.Set(name, val, node.Mutable, true)
 	return nil
 }
 
@@ -410,6 +406,35 @@ func evalAssignmentExpression(node *ast.AssignmentExpression, env *object.Enviro
 	if !entity.Mutable {
 		return newError("cannot reassign unmutable variable: %s", name)
 	}
-	env.Set(name, val, true)
+	env.Set(name, val, entity.Mutable, false)
 	return val
+}
+
+func evalForStatement(node *ast.ForStatement, env *object.Environment) object.Object {
+	iterable := Eval(node.Iterable, env)
+	array, ok := iterable.(*object.Array)
+	if !ok {
+		return newError("cannot iterate over non-array: %s", iterable.Type())
+	}
+
+	indexName := node.Index.Value
+	var valueName *string = nil
+	if node.Value != nil {
+		valueName = &node.Value.Value
+	}
+
+	for index, value := range array.Elements {
+		loopEnv := object.NewEnclosedEnvironment(env)
+		loopEnv.Set(indexName, &object.Integer{Value: int64(index)}, false, true)
+		if valueName != nil {
+			loopEnv.Set(*valueName, value, false, true)
+		}
+
+		result := Eval(node.Body, loopEnv)
+		if IsError(result) {
+			return result
+		}
+
+	}
+	return nil
 }

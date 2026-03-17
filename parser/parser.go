@@ -133,6 +133,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseLetStatement()
 	case token.RETURN:
 		return p.parseReturnStatement()
+	case token.FOR:
+		return p.parseForStatement()
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -338,6 +340,7 @@ func (p *Parser) parseIfExpression() ast.Expression {
 		if !p.expectPeek(token.LBRACE) {
 			return nil
 		}
+		p.nextToken()
 
 		branch.Body = p.parseBlockStatement()
 		if !p.expectCurTokenIs(token.RBRACE) {
@@ -354,7 +357,6 @@ func (p *Parser) parseIfExpression() ast.Expression {
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	block := &ast.BlockStatement{Token: p.curToken}
 	block.Statements = []ast.Statement{}
-	p.nextToken()
 	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
 		stmt := p.parseStatement()
 		if stmt != nil {
@@ -370,30 +372,32 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	if !p.expectPeek(token.LPAREN) {
 		return nil
 	}
-	lit.Parameters = p.parseFunctionParameters()
+	p.nextToken()
+	lit.Parameters = p.parseIdentifierList(token.RPAREN)
 	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
+	p.nextToken()
 	lit.Body = p.parseBlockStatement()
 	return lit
 }
 
-func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+func (p *Parser) parseIdentifierList(end token.TokenType) []*ast.Identifier {
 	identifiers := []*ast.Identifier{}
-	p.nextToken()
-	for !p.curTokenIs(token.RPAREN) {
+	for !p.curTokenIs(end) {
 		ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		identifiers = append(identifiers, ident)
 		if p.peekTokenIs(token.COMMA) {
 			p.nextToken()
 		}
 		p.nextToken()
-		identifiers = append(identifiers, ident)
 	}
 	return identifiers
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+	p.nextToken()
 	exp.Arguments = p.parseExpressionList(token.RPAREN)
 
 	return exp
@@ -405,13 +409,14 @@ func (p *Parser) parseStringLiteral() ast.Expression {
 
 func (p *Parser) parseArrayLiteral() ast.Expression {
 	array := &ast.ArrayLiteral{Token: p.curToken}
+	p.nextToken()
 	array.Elements = p.parseExpressionList(token.RBRACKET)
 	return array
 }
 
 func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 	list := []ast.Expression{}
-	p.nextToken()
+
 	for !p.curTokenIs(end) {
 		list = append(list, p.parseExpression(LOWEST))
 		if p.peekTokenIs(token.COMMA) {
@@ -452,4 +457,35 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 		return nil
 	}
 	return hash
+}
+
+func (p *Parser) parseForStatement() *ast.ForStatement {
+	stmt := &ast.ForStatement{Token: p.curToken}
+
+	p.nextToken()
+	bindings := p.parseIdentifierList(token.IN)
+
+	if len(bindings) != 1 && len(bindings) != 2 {
+		msg := fmt.Sprintf("expected 1 or 2 bindings in for statement, got %d", len(bindings))
+		p.errors = append(p.errors, msg)
+		return nil
+	} else if len(bindings) == 2 {
+		stmt.Value = bindings[1]
+	}
+	stmt.Index = bindings[0]
+
+	if !p.expectCurTokenIs(token.IN) {
+		return nil
+	}
+	p.nextToken()
+
+	stmt.Iterable = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+	p.nextToken()
+	stmt.Body = p.parseBlockStatement()
+
+	return stmt
 }

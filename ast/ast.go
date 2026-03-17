@@ -326,3 +326,33 @@ func (hl *HashLiteral) String() string {
 	out.WriteString("}")
 	return out.String()
 }
+
+type ForStatement struct {
+	Token    token.Token // The 'for' token
+	Index    *Identifier
+	Value    *Identifier
+	Iterable Expression
+	Body     *BlockStatement
+}
+
+func (fs *ForStatement) statementNode()       {}
+func (fs *ForStatement) TokenLiteral() string { return fs.Token.Literal }
+func (fs *ForStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString(fs.TokenLiteral() + " (")
+	if fs.Index != nil {
+		out.WriteString(fs.Index.String())
+	}
+	if fs.Value != nil {
+		if fs.Index != nil {
+			out.WriteString(", ")
+		}
+		out.WriteString(fs.Value.String())
+	}
+	out.WriteString(" in ")
+	out.WriteString(fs.Iterable.String())
+	out.WriteString(") {")
+	out.WriteString(fs.Body.String())
+	out.WriteString("}")
+	return out.String()
+}
