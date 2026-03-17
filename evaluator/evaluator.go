@@ -411,16 +411,27 @@ func evalAssignmentExpression(node *ast.AssignmentExpression, env *object.Enviro
 }
 
 func evalForStatement(node *ast.ForStatement, env *object.Environment) object.Object {
-	iterable := Eval(node.Iterable, env)
+	switch node.Clause.(type) {
+	case *ast.ForInClause:
+		return evalForInStatement(node, node.Clause.(*ast.ForInClause), env)
+	case *ast.ForConditionalClause:
+		return newError("TODO")
+	default:
+		return newError("unknown for control clause: %T", node.Clause)
+	}
+}
+
+func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *object.Environment) object.Object {
+	iterable := Eval(clause.Iterable, env)
 	array, ok := iterable.(*object.Array)
 	if !ok {
 		return newError("cannot iterate over non-array: %s", iterable.Type())
 	}
 
-	indexName := node.Index.Value
+	indexName := clause.Index.Value
 	var valueName *string = nil
-	if node.Value != nil {
-		valueName = &node.Value.Value
+	if clause.Value != nil {
+		valueName = &clause.Value.Value
 	}
 
 	for index, value := range array.Elements {
@@ -434,7 +445,6 @@ func evalForStatement(node *ast.ForStatement, env *object.Environment) object.Ob
 		if IsError(result) {
 			return result
 		}
-
 	}
 	return nil
 }

@@ -842,7 +842,7 @@ func TestMultiStatementProgram(t *testing.T) {
 	}
 }
 
-func TestForStatement(t *testing.T) {
+func TestForIterableStatement(t *testing.T) {
 	tests := []struct {
 		input           string
 		indexIdentifier string
@@ -885,22 +885,26 @@ func TestForStatement(t *testing.T) {
 
 		stmt, ok := program.Statements[0].(*ast.ForStatement)
 		if !ok {
-			t.Fatalf("program.Statements[0] is not ast.ForStatement. got=%T",
-				program.Statements[0])
+			t.Fatalf("program.Statements[0] is not ast.ForStatement. got=%T", program.Statements[0])
 		}
 
-		if !testIdentifier(t, stmt.Index, tt.indexIdentifier) {
+		clause, ok := stmt.Clause.(*ast.ForInClause)
+		if !ok {
+			t.Fatalf("stmt.Clause is not ast.ForIterableClause. got=%T", stmt.Clause)
+		}
+
+		if !testIdentifier(t, clause.Index, tt.indexIdentifier) {
 			return
 		}
 
-		if len(tt.valueIdentifier) > 0 && !testIdentifier(t, stmt.Value, tt.valueIdentifier) {
+		if len(tt.valueIdentifier) > 0 && !testIdentifier(t, clause.Value, tt.valueIdentifier) {
 			return
-		} else if len(tt.valueIdentifier) == 0 && stmt.Value != nil {
-			t.Errorf("stmt.Value should be nil. got=%T", stmt.Value)
+		} else if len(tt.valueIdentifier) == 0 && clause.Value != nil {
+			t.Errorf("stmt.Value should be nil. got=%T", clause.Value)
 		}
 
-		if stmt.Iterable.String() != tt.iterableString {
-			t.Errorf("stmt.Iterable.String() not %q. got=%q", tt.iterableString, stmt.Iterable.String())
+		if clause.Iterable.String() != tt.iterableString {
+			t.Errorf("stmt.Iterable.String() not %q. got=%q", tt.iterableString, clause.Iterable.String())
 		}
 
 		if stmt.Body.String() != tt.bodyString {

@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-const fibProgram = `
+const fibRecursive = `
 let fib = fn(x) {
 	if (x < 2) {
 		x
@@ -19,8 +19,8 @@ let fib = fn(x) {
 return fib(10);
 `
 
-func BenchmarkFibEval(b *testing.B) {
-	l := lexer.New(fibProgram)
+func BenchmarkFibRecursiveEval(b *testing.B) {
+	l := lexer.New(fibRecursive)
 	p := parser.New(l)
 	program := p.ParseProgram()
 	if len(p.Errors()) != 0 {

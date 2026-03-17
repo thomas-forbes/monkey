@@ -327,12 +327,47 @@ func (hl *HashLiteral) String() string {
 	return out.String()
 }
 
-type ForStatement struct {
-	Token    token.Token // The 'for' token
+type ForControlClause interface {
+	forControlClause()
+	String() string
+}
+
+type ForInClause struct {
 	Index    *Identifier
 	Value    *Identifier
 	Iterable Expression
-	Body     *BlockStatement
+}
+
+func (fic *ForInClause) forControlClause() {}
+func (fic *ForInClause) String() string {
+	var out bytes.Buffer
+	if fic.Index != nil {
+		out.WriteString(fic.Index.String())
+	}
+	if fic.Value != nil {
+		if fic.Index != nil {
+			out.WriteString(", ")
+		}
+		out.WriteString(fic.Value.String())
+	}
+	out.WriteString(" in ")
+	out.WriteString(fic.Iterable.String())
+	return out.String()
+}
+
+type ForConditionalClause struct {
+	Condition Expression
+}
+
+func (fcc *ForConditionalClause) forControlClause() {}
+func (fcc *ForConditionalClause) String() string {
+	return fcc.Condition.String()
+}
+
+type ForStatement struct {
+	Token  token.Token // The 'for' token
+	Clause ForControlClause
+	Body   *BlockStatement
 }
 
 func (fs *ForStatement) statementNode()       {}
@@ -340,17 +375,7 @@ func (fs *ForStatement) TokenLiteral() string { return fs.Token.Literal }
 func (fs *ForStatement) String() string {
 	var out bytes.Buffer
 	out.WriteString(fs.TokenLiteral() + " (")
-	if fs.Index != nil {
-		out.WriteString(fs.Index.String())
-	}
-	if fs.Value != nil {
-		if fs.Index != nil {
-			out.WriteString(", ")
-		}
-		out.WriteString(fs.Value.String())
-	}
-	out.WriteString(" in ")
-	out.WriteString(fs.Iterable.String())
+	out.WriteString(fs.Clause.String())
 	out.WriteString(") {")
 	out.WriteString(fs.Body.String())
 	out.WriteString("}")

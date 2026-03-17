@@ -465,21 +465,23 @@ func (p *Parser) parseForStatement() *ast.ForStatement {
 	p.nextToken()
 	bindings := p.parseIdentifierList(token.IN)
 
+	clause := &ast.ForInClause{}
 	if len(bindings) != 1 && len(bindings) != 2 {
 		msg := fmt.Sprintf("expected 1 or 2 bindings in for statement, got %d", len(bindings))
 		p.errors = append(p.errors, msg)
 		return nil
 	} else if len(bindings) == 2 {
-		stmt.Value = bindings[1]
+		clause.Value = bindings[1]
 	}
-	stmt.Index = bindings[0]
+	clause.Index = bindings[0]
 
 	if !p.expectCurTokenIs(token.IN) {
 		return nil
 	}
 	p.nextToken()
 
-	stmt.Iterable = p.parseExpression(LOWEST)
+	clause.Iterable = p.parseExpression(LOWEST)
+	stmt.Clause = clause
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil
