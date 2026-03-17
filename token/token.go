@@ -19,6 +19,7 @@ const (
 	MINUS    = "-"
 	SLASH    = "/"
 	ASTERISK = "*"
+	ITERATE  = ".."
 
 	// Comparison
 	EQUALS     = "=="

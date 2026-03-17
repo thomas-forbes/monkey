@@ -14,6 +14,7 @@ const (
 	ASSIGN      // =
 	EQUALS      // ==
 	LESSGREATER // > or <
+	ITERATE     // ..
 	SUM         // +
 	PRODUCT     // *
 	PREFIX      // -X or !X
@@ -27,6 +28,7 @@ var precedences = map[token.TokenType]int{
 	token.NOT_EQUALS: EQUALS,
 	token.LESS:       LESSGREATER,
 	token.GREATER:    LESSGREATER,
+	token.ITERATE:    ITERATE,
 	token.PLUS:       SUM,
 	token.MINUS:      SUM,
 	token.SLASH:      PRODUCT,
@@ -77,6 +79,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ASSIGN, p.parseAssignExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
+	p.registerInfix(token.ITERATE, p.parseIterateExpression)
 
 	return p
 }
@@ -490,4 +493,15 @@ func (p *Parser) parseForStatement() *ast.ForStatement {
 	stmt.Body = p.parseBlockStatement()
 
 	return stmt
+}
+
+func (p *Parser) parseIterateExpression(left ast.Expression) ast.Expression {
+	expression := &ast.IterableExpression{
+		Token: p.curToken,
+		Left:  left,
+	}
+	precedence := p.curPrecedence()
+	p.nextToken()
+	expression.Right = p.parseExpression(precedence)
+	return expression
 }

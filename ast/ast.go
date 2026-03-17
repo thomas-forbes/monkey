@@ -381,3 +381,19 @@ func (fs *ForStatement) String() string {
 	out.WriteString("}")
 	return out.String()
 }
+
+type IterableExpression struct {
+	Token token.Token // The '..' token
+	Left  Expression
+	Right Expression
+}
+
+func (it *IterableExpression) expressionNode()      {}
+func (it *IterableExpression) TokenLiteral() string { return it.Token.Literal }
+func (it *IterableExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString(it.Left.String())
+	out.WriteString("..")
+	out.WriteString(it.Right.String())
+	return out.String()
+}

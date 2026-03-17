@@ -88,6 +88,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return args[0]
 		}
 		return applyFunction(function, args)
+	case *ast.IterableExpression:
+		return evalIterableExpression(node, env)
 	}
 	return nil
 }
@@ -422,29 +424,66 @@ func evalForStatement(node *ast.ForStatement, env *object.Environment) object.Ob
 }
 
 func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *object.Environment) object.Object {
-	iterable := Eval(clause.Iterable, env)
-	array, ok := iterable.(*object.Array)
-	if !ok {
-		return newError("cannot iterate over non-array: %s", iterable.Type())
-	}
-
 	indexName := clause.Index.Value
 	var valueName *string = nil
 	if clause.Value != nil {
 		valueName = &clause.Value.Value
 	}
 
-	for index, value := range array.Elements {
-		loopEnv := object.NewEnclosedEnvironment(env)
-		loopEnv.Set(indexName, &object.Integer{Value: int64(index)}, false, true)
+	switch iter := Eval(clause.Iterable, env).(type) {
+	case *object.Array:
+		for index, value := range iter.Elements {
+			loopEnv := object.NewEnclosedEnvironment(env)
+			loopEnv.Set(indexName, &object.Integer{Value: int64(index)}, false, true)
+			if valueName != nil {
+				loopEnv.Set(*valueName, value, false, true)
+			}
+
+			result := Eval(node.Body, loopEnv)
+			if IsError(result) {
+				return result
+			}
+		}
+	case *object.Iterable:
 		if valueName != nil {
-			loopEnv.Set(*valueName, value, false, true)
+			return newError("cannot assign value in for-in loop without array iterable")
 		}
 
-		result := Eval(node.Body, loopEnv)
-		if IsError(result) {
-			return result
+		var increment int64 = 1
+		if iter.Left > iter.Right {
+			increment = -1
+		}
+
+		for index := iter.Left; (increment < 0 && index > iter.Right) || (increment > 0 && index < iter.Right); index = index + increment {
+			loopEnv := object.NewEnclosedEnvironment(env)
+			loopEnv.Set(indexName, &object.Integer{Value: int64(index)}, false, true)
+
+			result := Eval(node.Body, loopEnv)
+			if IsError(result) {
+				return result
+			}
 		}
 	}
+
 	return nil
+}
+
+func evalIterableExpression(node *ast.IterableExpression, env *object.Environment) object.Object {
+	left := Eval(node.Left, env)
+	if IsError(left) {
+		return left
+	}
+	leftInt, ok := left.(*object.Integer)
+	if !ok {
+		return newError("left side of iterable expression must be an integer, got %s", left.Type())
+	}
+	right := Eval(node.Right, env)
+	if IsError(right) {
+		return right
+	}
+	rightInt, ok := right.(*object.Integer)
+	if !ok {
+		return newError("right side of iterable expression must be an integer, got %s", right.Type())
+	}
+	return &object.Iterable{Right: rightInt.Value, Left: leftInt.Value}
 }

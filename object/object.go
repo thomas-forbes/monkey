@@ -21,6 +21,7 @@ const (
 	BUILTIN_OBJ      = "BUILTIN"
 	ARRAY_OBJ        = "ARRAY"
 	HASH_OBJ         = "HASH"
+	ITERABLE_OBJ     = "ITERABLE"
 )
 
 var (
@@ -150,6 +151,7 @@ type HashPair struct {
 	Key   Object
 	Value Object
 }
+
 type Hash struct {
 	Pairs map[HashKey]HashPair
 }
@@ -172,3 +174,11 @@ func (h *Hash) Inspect() string {
 	out.WriteString("}")
 	return out.String()
 }
+
+type Iterable struct {
+	Right int64
+	Left  int64
+}
+
+func (i *Iterable) Type() ObjectType { return ITERABLE_OBJ }
+func (i *Iterable) Inspect() string  { return fmt.Sprintf("%d..%d", i.Right, i.Left) }

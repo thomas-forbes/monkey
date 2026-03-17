@@ -591,6 +591,14 @@ func TestForStatement(t *testing.T) {
 			`let a = [1, 2, 3]; let mut sum = 0; for i, x in a { sum = sum + x * i }; sum;`,
 			8,
 		},
+		{
+			`let mut sum = 0; for i in 0..5 { sum = sum + i }; sum;`,
+			10,
+		},
+		{
+			`let mut sum = 0; for i in -5..0 { sum = sum + i }; sum;`,
+			-15,
+		},
 	}
 
 	for _, tt := range tests {

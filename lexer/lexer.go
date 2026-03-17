@@ -72,6 +72,14 @@ func (l *Lexer) NextToken() token.Token {
 	case '"':
 		tok.Type = token.STRING
 		tok.Literal = l.readString()
+	case '.':
+		if l.peekChar() == '.' {
+			l.readChar()
+			tok.Literal = ".."
+			tok.Type = token.ITERATE
+		} else {
+			tok = newToken(token.ILLEGAL, l.ch)
+		}
 	case '!':
 		if l.peekChar() == '=' {
 			l.readChar()
@@ -116,7 +124,13 @@ func (l *Lexer) skipWhiteSpace() {
 
 func (l *Lexer) readInt() string {
 	init_position := l.position
-	for isInt(l.ch) {
+	for {
+		if !isInt(l.ch) {
+			break
+		}
+		if l.ch == '.' && l.peekChar() == '.' {
+			break
+		}
 		l.readChar()
 	}
 	return l.input[init_position:l.position]
@@ -139,7 +153,7 @@ func isLetter(ch byte) bool {
 }
 
 func isInt(ch byte) bool {
-	return '0' <= ch && ch <= '9' || ch == '.'
+	return '0' <= ch && ch <= '9'
 }
 
 func (l *Lexer) readString() string {

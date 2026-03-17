@@ -912,3 +912,51 @@ func TestForIterableStatement(t *testing.T) {
 		}
 	}
 }
+
+func TestIterableExpression(t *testing.T) {
+	tests := []struct {
+		input       string
+		leftString  string
+		rightString string
+	}{
+		{
+			"0..10",
+			"0",
+			"10",
+		},
+		{
+			"-1..-10",
+			"(-1)",
+			"(-10)",
+		},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+				1, len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.ExpressionStatement. got=%T", program.Statements[0])
+		}
+
+		exp, ok := stmt.Expression.(*ast.IterableExpression)
+		if !ok {
+			t.Fatalf("stmt.Expression is not ast.IterableExpression. got=%T", stmt.Expression)
+		}
+
+		if exp.Left.String() != tt.leftString {
+			t.Errorf("exp.Start.String() not %q. got=%q", tt.leftString, exp.Left.String())
+		}
+
+		if exp.Right.String() != tt.rightString {
+			t.Errorf("exp.End.String() not %q. got=%q", tt.rightString, exp.Right.String())
+		}
+	}
+}
