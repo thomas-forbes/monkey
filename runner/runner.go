@@ -45,7 +45,8 @@ func StartFile(fileName string) {
 		fmt.Printf("Couldn't read file: %s\n", err)
 	}
 
-	evalProgram(string(data), env)
+	program := string(data)
+	evalProgram(program, env)
 }
 
 func evalProgram(program_string string, env *object.Environment) (*object.Environment, error) {

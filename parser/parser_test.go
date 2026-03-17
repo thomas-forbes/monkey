@@ -512,6 +512,14 @@ func TestIfExpression(t *testing.T) {
 				{"", "z"},
 			},
 		},
+		{
+			"if (x < y) { return x; } else if (y > x) { return y; } else { return z; }",
+			[]struct{ condition, body string }{
+				{"(x < y)", "return x;"},
+				{"(y > x)", "return y;"},
+				{"", "return z;"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -784,4 +792,53 @@ func TestParsingHashLiteralsWithExpressions(t *testing.T) {
 		}
 		testFunc(value)
 	}
+}
+
+func TestMultiStatementProgram(t *testing.T) {
+	tests := []struct {
+		input string
+		stmts []ast.Statement
+	}{
+		{
+			"let x = 5; let y = 10;",
+			[]ast.Statement{&ast.LetStatement{}, &ast.LetStatement{}},
+		},
+		{
+			"let add = fn(x, y) { x + y }; let x = add(5, 10);",
+			[]ast.Statement{&ast.LetStatement{}, &ast.LetStatement{}},
+		},
+		{
+			"let check = fn(x, y) { if (x > y) { return x; } else if (y > x) { return y; } else { return null; } }; let x = add(5, 10);",
+			[]ast.Statement{&ast.LetStatement{}, &ast.LetStatement{}},
+		},
+	}
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		if len(program.Statements) != len(tt.stmts) {
+			t.Fatalf("program.Statements does not contain %d statements. got=%d", len(tt.stmts), len(program.Statements))
+		}
+		for i, testStmt := range tt.stmts {
+			realStmt := program.Statements[i]
+			switch testStmt.(type) {
+			case *ast.LetStatement:
+				if _, ok := realStmt.(*ast.LetStatement); !ok {
+					t.Fatalf("statement %d is wrong type: got=%T, want=*ast.LetStatement", i, realStmt)
+				}
+			case *ast.ReturnStatement:
+				if _, ok := realStmt.(*ast.ReturnStatement); !ok {
+					t.Fatalf("statement %d is wrong type: got=%T, want=*ast.ReturnStatement", i, realStmt)
+				}
+			case *ast.ExpressionStatement:
+				if _, ok := realStmt.(*ast.ExpressionStatement); !ok {
+					t.Fatalf("statement %d is wrong type: got=%T, want=*ast.ExpressionStatement", i, realStmt)
+				}
+			default:
+				t.Fatalf("unsupported expected statement type %T", testStmt)
+			}
+		}
+	}
+
 }

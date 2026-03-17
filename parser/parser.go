@@ -246,6 +246,7 @@ type (
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
 	p.prefixParseFns[tokenType] = fn
 }
+
 func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
 }
@@ -327,7 +328,7 @@ func (p *Parser) parseIfExpression() ast.Expression {
 				return nil
 			}
 
-			branch = &ast.IfBranch{Condition: p.parseExpression(LOWEST)}
+			branch.Condition = p.parseExpression(LOWEST)
 
 			if !p.expectCurTokenIs(token.RPAREN) {
 				return nil
@@ -343,7 +344,9 @@ func (p *Parser) parseIfExpression() ast.Expression {
 			return nil
 		}
 		expression.Branches = append(expression.Branches, *branch)
-		p.nextToken()
+		if p.peekTokenIs(token.ELSE) {
+			p.nextToken()
+		}
 	}
 	return expression
 }
@@ -405,6 +408,7 @@ func (p *Parser) parseArrayLiteral() ast.Expression {
 	array.Elements = p.parseExpressionList(token.RBRACKET)
 	return array
 }
+
 func (p *Parser) parseExpressionList(end token.TokenType) []ast.Expression {
 	list := []ast.Expression{}
 	p.nextToken()
