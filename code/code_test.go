@@ -9,8 +9,12 @@ func TestMake(t *testing.T) {
 		expected []byte
 	}{
 		{OpConstant, []int{65534}, []byte{byte(OpConstant), 255, 254}},
-		{OpAdd, []int{}, []byte{byte(OpAdd)}},
 		{OpPop, []int{}, []byte{byte(OpPop)}},
+
+		{OpAdd, []int{}, []byte{byte(OpAdd)}},
+		{OpSub, []int{}, []byte{byte(OpSub)}},
+		{OpMul, []int{}, []byte{byte(OpMul)}},
+		{OpDiv, []int{}, []byte{byte(OpDiv)}},
 	}
 	for _, tt := range tests {
 		instruction := Make(tt.op, tt.operands...)
