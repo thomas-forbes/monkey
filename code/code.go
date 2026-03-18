@@ -63,7 +63,9 @@ const (
 	OpJump
 
 	OpNull
+
 	OpArray
+	OpHash
 )
 
 type Definition struct {
@@ -96,6 +98,7 @@ var definitions = map[Opcode]*Definition{
 	OpNull: {"OpNull", []int{}},
 
 	OpArray: {"OpArray", []int{2}},
+	OpHash:  {"OpHash", []int{2}},
 }
 
 func Lookup(op byte) (*Definition, error) {
