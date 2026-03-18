@@ -87,7 +87,7 @@ func evalProgram(program_string string, env *object.Environment) (object.Object,
 		if err != nil {
 			return nil, nil, fmt.Errorf("Woops! Executing bytecode failed:\n %s\n", err)
 		}
-		result = machine.StackTop()
+		result = machine.LastPoppedStackElem()
 	default:
 		return nil, nil, fmt.Errorf("Unknown engine: %s", ENGINE)
 	}
