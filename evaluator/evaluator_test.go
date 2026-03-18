@@ -191,14 +191,7 @@ func TestReturnStatements(t *testing.T) {
 		{"return 10; 9;", 10},
 		{"return 2 * 5; 9;", 10},
 		{"9; return 2 * 5; 9;", 10},
-		{`if (10 > 1) {
-if (10 > 1) {
-return 10;
-}
-return 1;
-}`,
-			10,
-		},
+		{"if (10 > 1) { if (10 > 1) { return 10; } return 1; }", 10},
 	}
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
@@ -610,6 +603,18 @@ func TestForStatement(t *testing.T) {
 		{
 			`let mut sum = 0; for i in -5..0 { sum = sum + i }; sum;`,
 			-15,
+		},
+		{
+			`for i in 0..5 { if (i == 2) { return i } }`,
+			2,
+		},
+		{
+			`let mut sum = 0; for i in 0..5 {  if (i == 2) { continue }; sum = sum + i; }; sum;`,
+			8,
+		},
+		{
+			`let mut sum = 0; for i in 0..5 { if (i > 2) { break; } sum = sum + i; }; sum;`,
+			3,
 		},
 	}
 

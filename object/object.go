@@ -22,6 +22,8 @@ const (
 	ARRAY_OBJ        = "ARRAY"
 	HASH_OBJ         = "HASH"
 	RANGE_OBJ        = "RANGE"
+	BREAK_OBJ        = "BREAK"
+	CONTINUE_OBJ     = "CONTINUE"
 )
 
 var (
@@ -54,20 +56,40 @@ type Null struct{}
 func (n *Null) Type() ObjectType { return NULL_OBJ }
 func (n *Null) Inspect() string  { return "null" }
 
+type ControlFlowSignal interface {
+	controlFlowSignal()
+}
+
 type ReturnValue struct {
 	Value Object
 }
 
-func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE_OBJ }
-func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
+func (rv *ReturnValue) controlFlowSignal() {}
+func (rv *ReturnValue) Type() ObjectType   { return RETURN_VALUE_OBJ }
+func (rv *ReturnValue) Inspect() string    { return "RETURN(" + rv.Value.Inspect() + ")" }
 
 type Error struct {
 	// TODO: stack trace
 	Message string
 }
 
-func (e *Error) Type() ObjectType { return ERROR_OBJ }
-func (e *Error) Inspect() string  { return "ERROR: " + e.Message }
+func (e *Error) controlFlowSignal() {}
+func (e *Error) Type() ObjectType   { return ERROR_OBJ }
+func (e *Error) Inspect() string    { return "ERROR: " + e.Message }
+
+type Break struct {
+	Value Object
+}
+
+func (e *Break) controlFlowSignal() {}
+func (e *Break) Type() ObjectType   { return BREAK_OBJ }
+func (e *Break) Inspect() string    { return "BREAK" }
+
+type Continue struct{}
+
+func (e *Continue) controlFlowSignal() {}
+func (e *Continue) Type() ObjectType   { return CONTINUE_OBJ }
+func (e *Continue) Inspect() string    { return "CONTINUE" }
 
 type Function struct {
 	Parameters []*ast.Identifier

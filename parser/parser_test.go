@@ -960,3 +960,84 @@ func TestRangeExpression(t *testing.T) {
 		}
 	}
 }
+
+func TestBreakStatement(t *testing.T) {
+	input := "for i in range(10) { if (i == 5) { break 2 + 2; } }"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+			1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ForStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ForStatement. got=%T", program.Statements[0])
+	}
+
+	if len(stmt.Body.Statements) != 1 {
+		t.Fatalf("stmt.Body.Statements does not contain %d statements. got=%d\n", 1, len(stmt.Body.Statements))
+	}
+
+	expressionStmt, ok := stmt.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt.Body.Statements[0] is not ast.ExpressionStatement. got=%T", stmt.Body.Statements[0])
+	}
+	ifExpression, ok := expressionStmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("stmt.Body.Statements[0].Expression is not ast.IfExpression. got=%T", expressionStmt.Expression)
+	}
+	if len(ifExpression.Branches) != 1 {
+		t.Fatalf("ifExpression.Branches does not contain %d branches. got=%d\n", 1, len(ifExpression.Branches))
+	}
+	ifBranch := ifExpression.Branches[0]
+	breakStmt, ok := ifBranch.Body.Statements[0].(*ast.BreakStatement)
+	if !ok {
+		t.Fatalf("ifBranch.Body.Statements[0] is not ast.BreakStatement. got=%T", ifBranch.Body.Statements[0])
+	}
+
+	_, ok = breakStmt.Value.(*ast.InfixExpression)
+	if !ok {
+		t.Fatalf("breakStmt.BreakValue is not ast.InfixExpression. got=%T", breakStmt.Value)
+	}
+}
+
+func TestContinueStatement(t *testing.T) {
+	input := "for i in range(10) { if (i == 5) { continue; } }"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+			1, len(program.Statements))
+	}
+
+	stmt, ok := program.Statements[0].(*ast.ForStatement)
+	if !ok {
+		t.Fatalf("program.Statements[0] is not ast.ForStatement. got=%T", program.Statements[0])
+	}
+
+	if len(stmt.Body.Statements) != 1 {
+		t.Fatalf("stmt.Body.Statements does not contain %d statements. got=%d\n", 1, len(stmt.Body.Statements))
+	}
+
+	expressionStmt, ok := stmt.Body.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt.Body.Statements[0] is not ast.ExpressionStatement. got=%T", stmt.Body.Statements[0])
+	}
+	ifExpression, ok := expressionStmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("stmt.Body.Statements[0].Expression is not ast.IfExpression. got=%T", expressionStmt.Expression)
+	}
+	if len(ifExpression.Branches) != 1 {
+		t.Fatalf("ifExpression.Branches does not contain %d branches. got=%d\n", 1, len(ifExpression.Branches))
+	}
+	ifBranch := ifExpression.Branches[0]
+	_, ok = ifBranch.Body.Statements[0].(*ast.ContinueStatement)
+	if !ok {
+		t.Fatalf("ifBranch.Body.Statements[0] is not ast.ContinueStatement. got=%T", ifBranch.Body.Statements[0])
+	}
+}

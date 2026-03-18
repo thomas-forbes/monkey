@@ -80,6 +80,33 @@ func (rs *ReturnStatement) String() string {
 	return out.String()
 }
 
+type BreakStatement struct {
+	Token token.Token // The 'break' token
+	Value Expression  // Optional value to break with
+}
+
+func (bs *BreakStatement) statementNode()       {}
+func (bs *BreakStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BreakStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString(bs.TokenLiteral())
+	if bs.Value != nil {
+		out.WriteString(" " + bs.Value.String())
+	}
+	out.WriteString(";")
+	return out.String()
+}
+
+type ContinueStatement struct {
+	Token token.Token // The 'continue' token
+}
+
+func (cs *ContinueStatement) statementNode()       {}
+func (cs *ContinueStatement) TokenLiteral() string { return cs.Token.Literal }
+func (cs *ContinueStatement) String() string {
+	return cs.TokenLiteral() + ";"
+}
+
 type ExpressionStatement struct {
 	Token      token.Token // the first token of the expression
 	Expression Expression
@@ -188,7 +215,7 @@ func (ie *IfExpression) String() string {
 	var out bytes.Buffer
 	out.WriteString("if")
 	for i, branch := range ie.Branches {
-		if i == len(ie.Branches)-1 {
+		if i > 0 && i == len(ie.Branches)-1 {
 			out.WriteString(" else")
 		} else {
 			if i > 0 {
@@ -213,7 +240,10 @@ func (bs *BlockStatement) statementNode()       {}
 func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
 func (bs *BlockStatement) String() string {
 	var out bytes.Buffer
-	for _, s := range bs.Statements {
+	for i, s := range bs.Statements {
+		if i > 0 {
+			out.WriteString(" ")
+		}
 		out.WriteString(s.String())
 	}
 	return out.String()
