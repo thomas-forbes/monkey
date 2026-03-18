@@ -65,7 +65,8 @@ type vmTestCase struct {
 
 func runVmTests(t *testing.T, tests []vmTestCase) {
 	t.Helper()
-	for _, tt := range tests {
+	for i, tt := range tests {
+		t.Logf("test %d", i)
 		program := parse(tt.input)
 		comp := compiler.New()
 		err := comp.Compile(program)
@@ -131,6 +132,21 @@ func TestBooleanExpressions(t *testing.T) {
 		{"!!true", true},
 		{"!!false", false},
 		{"!!5", true},
+	}
+	runVmTests(t, tests)
+}
+
+func TestConditionals(t *testing.T) {
+	tests := []vmTestCase{
+		{"if (true) { 10 }", 10},
+		{"if (true) { 10 } else { 20 }", 10},
+		{"if (false) { 10 } else { 20 } ", 20},
+		{"if (false) { 10 } else if (true) { 20 } ", 20},
+		{"if (false) { 10 } else if (false) { 20 } else { 30 } ", 30},
+		{"if (1) { 10 }", 10},
+		{"if (1 < 2) { 10 }", 10},
+		{"if (1 < 2) { 10 } else { 20 }", 10},
+		{"if (1 > 2) { 10 } else { 20 }", 20},
 	}
 	runVmTests(t, tests)
 }
