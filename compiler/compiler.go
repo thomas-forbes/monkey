@@ -59,6 +59,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 	case *ast.IfExpression:
 		branchEndJumpPos := make([]int, len(node.Branches))
+		hasElse := false
 		for i, branch := range node.Branches {
 			if branch.Condition != nil {
 				err := c.Compile(branch.Condition)
@@ -66,6 +67,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 					return err
 				}
 			} else {
+				hasElse = true
 				c.emit(code.OpTrue) // else branch
 			}
 
@@ -86,6 +88,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 			endPos := len(c.instructions)
 			c.changeOperand(conditionPos, endPos)
+		}
+		if !hasElse {
+			c.emit(code.OpNull)
 		}
 		endPos := len(c.instructions)
 		for _, pos := range branchEndJumpPos {

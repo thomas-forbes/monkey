@@ -82,6 +82,11 @@ func (vm *VM) Run() error {
 			if !isTruthy(condition) {
 				ip = pos - 1
 			}
+		case code.OpNull:
+			err := vm.push(object.NULL)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -187,6 +192,8 @@ func (vm *VM) executeBangOperator() error {
 		return vm.push(object.FALSE)
 	case object.FALSE:
 		return vm.push(object.TRUE)
+	case object.NULL:
+		return vm.push(object.TRUE)
 	default:
 		return vm.push(object.FALSE)
 	}
@@ -205,6 +212,8 @@ func isTruthy(obj object.Object) bool {
 	switch obj := obj.(type) {
 	case *object.Boolean:
 		return obj.Value
+	case *object.Null:
+		return false
 	default:
 		return true
 	}
