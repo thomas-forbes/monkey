@@ -4,6 +4,7 @@ type Symbol struct {
 	Name  string
 	Index int
 }
+
 type SymbolTable struct {
 	Outer          *SymbolTable
 	store          map[string]Symbol

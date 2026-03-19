@@ -20,9 +20,10 @@ type EmittedInstruction struct {
 }
 
 type Compiler struct {
-	constants  []object.Object
-	scopes     []CompilationScope
-	scopeIndex int
+	symbolTable *SymbolTable
+	constants   []object.Object
+	scopes      []CompilationScope
+	scopeIndex  int
 }
 
 func New() *Compiler {
@@ -32,9 +33,10 @@ func New() *Compiler {
 		previousInstruction: EmittedInstruction{},
 	}
 	return &Compiler{
-		constants:  []object.Object{},
-		scopes:     []CompilationScope{mainScope},
-		scopeIndex: 0,
+		symbolTable: NewSymbolTable(),
+		constants:   []object.Object{},
+		scopes:      []CompilationScope{mainScope},
+		scopeIndex:  0,
 	}
 }
 
@@ -66,12 +68,20 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+	case *ast.Identifier:
+		symbol, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("undefined variable %s", node.Value)
+		}
+		c.emit(code.OpGet, symbol.Index)
 	case *ast.LetStatement:
 		err := c.Compile(node.Value)
 		if err != nil {
 			return err
 		}
-		// c.emit()
+
+		symbol := c.symbolTable.Define(node.Name.Value)
+		c.emit(code.OpSet, symbol.Index)
 	case *ast.IfExpression:
 		branchEndJumpPos := make([]int, len(node.Branches))
 		hasElse := false
@@ -321,11 +331,16 @@ func (c *Compiler) enterScope() {
 	}
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
+
+	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
 }
 
 func (c *Compiler) leaveScope() code.Instructions {
 	instructions := c.currentInstructions()
 	c.scopes = c.scopes[:len(c.scopes)-1]
 	c.scopeIndex--
+
+	c.symbolTable = c.symbolTable.Outer
+
 	return instructions
 }
