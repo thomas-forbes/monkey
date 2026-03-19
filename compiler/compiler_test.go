@@ -623,8 +623,8 @@ func TestFunctionCalls(t *testing.T) {
 			},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpClosure, 1), // The compiled function
-				code.Make(code.OpSet, 0),
-				code.Make(code.OpGet, 0),
+				code.Make(code.OpSetLocal, 0),
+				code.Make(code.OpGetLocal, 0),
 				code.Make(code.OpCall),
 				code.Make(code.OpPop),
 			},
@@ -640,13 +640,13 @@ func TestLetStatementScopes(t *testing.T) {
 			expectedConstants: []interface{}{
 				55,
 				[]code.Instructions{
-					code.Make(code.OpGet, 0),
+					code.Make(code.OpGetLocal, 0),
 					code.Make(code.OpReturnValue),
 				},
 			},
 			expectedInstructions: []code.Instructions{
 				code.Make(code.OpConstant, 0),
-				code.Make(code.OpSet, 0),
+				code.Make(code.OpSetLocal, 0),
 				code.Make(code.OpClosure, 1),
 				code.Make(code.OpPop),
 			},
@@ -657,8 +657,8 @@ func TestLetStatementScopes(t *testing.T) {
 				55,
 				[]code.Instructions{
 					code.Make(code.OpConstant, 0),
-					code.Make(code.OpSet, 0),
-					code.Make(code.OpGet, 0),
+					code.Make(code.OpSetLocal, 0),
+					code.Make(code.OpGetLocal, 0),
 					code.Make(code.OpReturnValue),
 				},
 			},
@@ -674,11 +674,11 @@ func TestLetStatementScopes(t *testing.T) {
 				77,
 				[]code.Instructions{
 					code.Make(code.OpConstant, 0),
-					code.Make(code.OpSet, 0),
+					code.Make(code.OpSetLocal, 0),
 					code.Make(code.OpConstant, 1),
-					code.Make(code.OpSet, 1),
-					code.Make(code.OpGet, 0),
-					code.Make(code.OpGet, 1),
+					code.Make(code.OpSetLocal, 1),
+					code.Make(code.OpGetLocal, 0),
+					code.Make(code.OpGetLocal, 1),
 					code.Make(code.OpAdd),
 					code.Make(code.OpReturnValue),
 				},

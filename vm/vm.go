@@ -206,7 +206,7 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
-		case code.OpSet:
+		case code.OpSetLocal:
 			localIndex := code.ReadUint16(ins[ip+1:])
 
 			vm.currentFrame().ip += 2
@@ -214,7 +214,7 @@ func (vm *VM) Run() error {
 
 			value := vm.pop()
 			vm.stack[frame.bp+int(localIndex)] = value
-		case code.OpGet:
+		case code.OpGetLocal:
 			localIndex := code.ReadUint16(ins[ip+1:])
 
 			vm.currentFrame().ip += 2

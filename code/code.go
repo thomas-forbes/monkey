@@ -74,8 +74,8 @@ const (
 
 	OpReturnValue
 
-	OpSet
-	OpGet
+	OpSetLocal
+	OpGetLocal
 
 	OpClosure
 )
@@ -125,8 +125,8 @@ var definitions = map[Opcode]*Definition{
 
 	OpReturnValue: {"OpReturnValue", []int{}},
 
-	OpSet: {"OpSet", []int{2}},
-	OpGet: {"OpGet", []int{2}},
+	OpSetLocal: {"OpSetLocal", []int{2}},
+	OpGetLocal: {"OpGetLocal", []int{2}},
 
 	OpClosure: {"OpClosure", []int{2, 1}},
 }
