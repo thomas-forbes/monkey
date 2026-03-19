@@ -209,9 +209,10 @@ func (i *Range) Inspect() string  { return fmt.Sprintf("%d..%d", i.Right, i.Left
 
 type CompiledFunction struct {
 	Instructions code.Instructions
+	NumLocals    int
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }
 func (cf *CompiledFunction) Inspect() string {
-	return fmt.Sprintf("CompiledFunction[%p]", cf)
+	return fmt.Sprintf("CF(%d)[\n%s]", cf.NumLocals, cf.Instructions)
 }

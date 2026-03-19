@@ -5,6 +5,7 @@ import (
 	"monkey/code"
 	"monkey/compiler"
 	"monkey/object"
+	"strings"
 )
 
 const StackSize = 2048
@@ -19,13 +20,33 @@ type VM struct {
 	framesIndex int
 }
 
+func (vm *VM) String() string {
+	var out strings.Builder
+	fmt.Fprintf(&out, "sp: %d\n", vm.sp)
+	fmt.Fprint(&out, "constants:\n")
+	for i, constant := range vm.constants {
+		fmt.Fprintf(&out, "%d: %s\n", i, constant.Type())
+	}
+	fmt.Fprint(&out, "stack:\n")
+	for i := 0; i < vm.sp; i++ {
+		if vm.stack[i] == nil {
+			fmt.Fprintf(&out, "%d: <nil>\n", i)
+		} else {
+			fmt.Fprintf(&out, "%d: %s\n", i, vm.stack[i].Inspect())
+		}
+	}
+	return out.String()
+}
+
 func (vm *VM) currentFrame() *Frame {
 	return vm.frames[vm.framesIndex-1]
 }
+
 func (vm *VM) pushFrame(f *Frame) {
 	vm.frames[vm.framesIndex] = f
 	vm.framesIndex++
 }
+
 func (vm *VM) popFrame() *Frame {
 	vm.framesIndex--
 	return vm.frames[vm.framesIndex]
@@ -34,14 +55,19 @@ func (vm *VM) popFrame() *Frame {
 const MaxFrames = 1024
 
 func New(bytecode *compiler.Bytecode) *VM {
-	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
-	mainFrame := NewFrame(mainFn)
+	sp := 0
+
+	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions, NumLocals: bytecode.NumLocals}
+	mainFrame := NewFrame(mainFn, sp)
+	sp += mainFn.NumLocals
+
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
+
 	return &VM{
 		constants:   bytecode.Constants,
 		stack:       make([]object.Object, StackSize),
-		sp:          0,
+		sp:          sp,
 		frames:      frames,
 		framesIndex: 1,
 	}
@@ -151,8 +177,11 @@ func (vm *VM) Run() error {
 			}
 		case code.OpReturnValue:
 			returnValue := vm.pop()
-			vm.popFrame()
+
+			frame := vm.popFrame()
 			vm.pop()
+
+			vm.sp = frame.bp - 1
 
 			err := vm.push(returnValue)
 			if err != nil {
@@ -163,8 +192,31 @@ func (vm *VM) Run() error {
 			if !ok {
 				return fmt.Errorf("calling non-function")
 			}
-			frame := NewFrame(fn)
+			frame := NewFrame(fn, vm.sp)
 			vm.pushFrame(frame)
+			vm.sp = frame.bp + fn.NumLocals
+		case code.OpSet:
+			localIndex := code.ReadUint16(ins[ip+1:])
+
+			vm.currentFrame().ip += 2
+			frame := vm.currentFrame()
+
+			value := vm.pop()
+			vm.stack[frame.bp+int(localIndex)] = value
+		case code.OpGet:
+			localIndex := code.ReadUint16(ins[ip+1:])
+
+			vm.currentFrame().ip += 2
+
+			var value object.Object = nil
+			for i := 0; value == nil && vm.framesIndex-i > 0; i++ {
+				bp := vm.frames[vm.framesIndex-1-i].bp
+				value = vm.stack[bp+int(localIndex)]
+			}
+			err := vm.push(value)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

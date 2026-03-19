@@ -34,6 +34,7 @@ func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
 
 func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
 	s := NewSymbolTable()
+	s.numDefinitions = outer.numDefinitions
 	s.Outer = outer
 	return s
 }

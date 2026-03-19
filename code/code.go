@@ -76,6 +76,14 @@ const (
 	OpGet
 )
 
+func (o Opcode) String() string {
+	def, ok := definitions[o]
+	if !ok {
+		return fmt.Sprintf("Opcode(%d)", o)
+	}
+	return def.Name
+}
+
 type Definition struct {
 	Name          string
 	OperandWidths []int
