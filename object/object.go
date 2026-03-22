@@ -209,8 +209,9 @@ func (i *Range) Type() ObjectType { return RANGE_OBJ }
 func (i *Range) Inspect() string  { return fmt.Sprintf("%d..%d", i.Right, i.Left) }
 
 type CompiledFunction struct {
-	Instructions code.Instructions
-	NumLocals    int
+	Instructions  code.Instructions
+	NumLocals     int
+	NumParameters int
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION_OBJ }

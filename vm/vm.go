@@ -207,10 +207,10 @@ func (vm *VM) Run() error {
 				return err
 			}
 		case code.OpCall:
-			// numArgs := code.ReadUint8(ins[ip+1:])
-			// vm.currentFrame().ip += 1
+			numArgs := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip += 1
 
-			err := vm.executeCall(int(0))
+			err := vm.executeCall(int(numArgs))
 			if err != nil {
 				return err
 			}
@@ -453,9 +453,9 @@ func (vm *VM) executeCall(numArgs int) error {
 }
 
 func (vm *VM) callClosure(cl *object.Closure, numArgs int) error {
-	// if numArgs != cl.Fn.NumParameters {
-	// 	return fmt.Errorf("wrong number of arguments: want=%d, got=%d", cl.Fn.NumParameters, numArgs)
-	// }
+	if numArgs != cl.Fn.NumParameters {
+		return fmt.Errorf("wrong number of arguments: want=%d, got=%d", cl.Fn.NumParameters, numArgs)
+	}
 
 	frame := NewFrame(cl, vm.sp-numArgs)
 	vm.pushFrame(frame)
