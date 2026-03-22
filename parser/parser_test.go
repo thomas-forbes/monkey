@@ -924,6 +924,11 @@ func TestForConditionStatement(t *testing.T) {
 			"(i < 10)",
 			"i = (i + 1)",
 		},
+		{
+			"for true { i = i + 1; }",
+			"true",
+			"i = (i + 1)",
+		},
 	}
 
 	for _, tt := range tests {

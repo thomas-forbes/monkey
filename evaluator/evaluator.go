@@ -421,9 +421,30 @@ func evalForStatement(node *ast.ForStatement, env *object.Environment) object.Ob
 	case *ast.ForInClause:
 		return evalForInStatement(node, node.Clause.(*ast.ForInClause), env)
 	case *ast.ForConditionalClause:
-		return newError("TODO")
+		return evalForConditionalStatement(node, node.Clause.(*ast.ForConditionalClause), env)
 	default:
 		return newError("unknown for control clause: %T", node.Clause)
+	}
+}
+
+func evalLoopBody(body *ast.BlockStatement, env *object.Environment) (object.Object, bool) {
+	result := Eval(body, env)
+	control, ok := result.(object.ControlFlowSignal)
+	if !ok {
+		return result, false
+	}
+
+	switch control.(type) {
+	case *object.Break:
+		return result.(*object.Break).Value, true
+	case *object.Continue:
+		return result, false
+	case *object.ReturnValue:
+		return result, true
+	case *object.Error:
+		return result, true
+	default:
+		return result, true
 	}
 }
 
@@ -443,19 +464,9 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 				loopEnv.Set(*valueName, value, false, true)
 			}
 
-			result := Eval(node.Body, loopEnv)
-			control, ok := result.(object.ControlFlowSignal)
-			if ok {
-				switch control.(type) {
-				case *object.Break:
-					return result.(*object.Break).Value
-				case *object.Continue:
-					continue
-				case *object.ReturnValue:
-					return result
-				case *object.Error:
-					return result
-				}
+			result, done := evalLoopBody(node.Body, loopEnv)
+			if done {
+				return result
 			}
 		}
 	case *object.Hash:
@@ -466,19 +477,9 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 				loopEnv.Set(*valueName, pair.Value, false, true)
 			}
 
-			result := Eval(node.Body, loopEnv)
-			control, ok := result.(object.ControlFlowSignal)
-			if ok {
-				switch control.(type) {
-				case *object.Break:
-					return result.(*object.Break).Value
-				case *object.Continue:
-					continue
-				case *object.ReturnValue:
-					return result
-				case *object.Error:
-					return result
-				}
+			result, done := evalLoopBody(node.Body, loopEnv)
+			if done {
+				return result
 			}
 		}
 	case *object.Range:
@@ -495,24 +496,31 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 			loopEnv := object.NewEnclosedEnvironment(env)
 			loopEnv.Set(keyName, &object.Integer{Value: int64(index)}, false, true)
 
-			result := Eval(node.Body, loopEnv)
-			control, ok := result.(object.ControlFlowSignal)
-			if ok {
-				switch control.(type) {
-				case *object.Break:
-					return result.(*object.Break).Value
-				case *object.Continue:
-					continue
-				case *object.ReturnValue:
-					return result
-				case *object.Error:
-					return result
-				}
+			result, done := evalLoopBody(node.Body, loopEnv)
+			if done {
+				return result
 			}
 		}
 	}
 
 	return object.NULL
+}
+
+func evalForConditionalStatement(node *ast.ForStatement, clause *ast.ForConditionalClause, env *object.Environment) object.Object {
+	for {
+		condition := Eval(clause.Condition, env)
+		if IsError(condition) {
+			return condition
+		}
+		if !isTruthy(condition) {
+			return object.NULL
+		}
+
+		result, done := evalLoopBody(node.Body, env)
+		if done {
+			return result
+		}
+	}
 }
 
 func evalRangeExpression(node *ast.RangeExpression, env *object.Environment) object.Object {

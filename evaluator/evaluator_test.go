@@ -623,3 +623,36 @@ func TestForStatement(t *testing.T) {
 		testIntegerObject(t, evaluated, tt.expected)
 	}
 }
+
+func TestConditionalForStatement(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{
+			`let mut i = 0; for i < 5 { i = i + 1; }; i;`,
+			5,
+		},
+		{
+			`let mut i = 0; let mut sum = 0; for i < 5 { i = i + 1; if (i == 3) { continue; }; sum = sum + i; }; sum;`,
+			12,
+		},
+		{
+			`let mut i = 0; let mut sum = 0; for true { if (i == 3) { break; }; sum = sum + i; i = i + 1; }; sum;`,
+			3,
+		},
+		{
+			`let mut i = 0; for i < 5 { if (i == 2) { return i; }; i = i + 1; }`,
+			2,
+		},
+		{
+			`let mut i = 0; for i < 5 { if (i == 2) { break 99; }; i = i + 1; }`,
+			99,
+		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		testIntegerObject(t, evaluated, tt.expected)
+	}
+}
