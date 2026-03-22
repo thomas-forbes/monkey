@@ -75,7 +75,12 @@ func New(bytecode *compiler.Bytecode) *VM {
 }
 
 func (vm *VM) LastPoppedStackElem() object.Object {
-	return vm.stack[vm.sp]
+	result := vm.stack[vm.sp]
+	if result == nil {
+		return object.NULL
+	} else {
+		return result
+	}
 }
 
 func (vm *VM) Run() error {

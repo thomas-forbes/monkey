@@ -96,7 +96,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.ContinueStatement:
 		return &object.Continue{}
 	}
-	return nil
+	return object.NULL
 }
 
 func evalBlockStatement(stmts []ast.Statement, env *object.Environment) object.Object {
@@ -396,7 +396,7 @@ func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Ob
 		return newError("cannot reinitialize variable: %s", name)
 	}
 	env.Set(name, val, node.Mutable, true)
-	return nil
+	return object.NULL
 }
 
 func evalAssignmentExpression(node *ast.AssignmentExpression, env *object.Environment) object.Object {
@@ -512,7 +512,7 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 		}
 	}
 
-	return nil
+	return object.NULL
 }
 
 func evalRangeExpression(node *ast.RangeExpression, env *object.Environment) object.Object {

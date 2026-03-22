@@ -86,6 +86,7 @@ func evalProgram(engine Engine, program_string string, env *object.Environment) 
 
 	var result object.Object
 	var duration time.Duration
+
 	switch engine {
 	case INTERPRETER:
 		start := time.Now()
