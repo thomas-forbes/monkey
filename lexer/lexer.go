@@ -108,6 +108,17 @@ func (l *Lexer) NextToken() token.Token {
 	return tok
 }
 
+func (l *Lexer) Tokenize() []token.Token {
+	tokens := []token.Token{}
+	for {
+		tok := l.NextToken()
+		tokens = append(tokens, tok)
+		if tok.Type == token.EOF {
+			return tokens
+		}
+	}
+}
+
 func (l *Lexer) readIdentifier() string {
 	init_position := l.position
 	for isLetter(l.ch) {
