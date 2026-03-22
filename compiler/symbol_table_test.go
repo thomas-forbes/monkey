@@ -3,14 +3,13 @@ package compiler
 import "testing"
 
 func TestDefine(t *testing.T) {
-	return
 	expected := map[string]Symbol{
-		"a": Symbol{Name: "a", Index: 0},
-		"b": Symbol{Name: "b", Index: 1},
-		"c": Symbol{Name: "c", Index: 0},
-		"d": Symbol{Name: "d", Index: 1},
-		"e": Symbol{Name: "e", Index: 0},
-		"f": Symbol{Name: "f", Index: 1},
+		"a": {Name: "a", Scope: LocalScope, Index: 0},
+		"b": {Name: "b", Scope: LocalScope, Index: 1},
+		"c": {Name: "c", Scope: LocalScope, Index: 0},
+		"d": {Name: "d", Scope: LocalScope, Index: 1},
+		"e": {Name: "e", Scope: LocalScope, Index: 0},
+		"f": {Name: "f", Scope: LocalScope, Index: 1},
 	}
 	global := NewSymbolTable()
 	a := global.Define("a")
@@ -41,13 +40,12 @@ func TestDefine(t *testing.T) {
 	}
 }
 func TestResolveGlobal(t *testing.T) {
-	return
 	global := NewSymbolTable()
 	global.Define("a")
 	global.Define("b")
 	expected := []Symbol{
-		Symbol{Name: "a", Index: 0},
-		Symbol{Name: "b", Index: 1},
+		{Name: "a", Scope: LocalScope, Index: 0},
+		{Name: "b", Scope: LocalScope, Index: 1},
 	}
 	for _, sym := range expected {
 		result, ok := global.Resolve(sym.Name)
@@ -63,7 +61,6 @@ func TestResolveGlobal(t *testing.T) {
 }
 
 func TestResolve(t *testing.T) {
-	return
 	global := NewSymbolTable()
 	global.Define("a")
 	global.Define("b")
@@ -82,19 +79,19 @@ func TestResolve(t *testing.T) {
 		{
 			firstLocal,
 			[]Symbol{
-				Symbol{Name: "a", Index: 0},
-				Symbol{Name: "b", Index: 1},
-				Symbol{Name: "c", Index: 0},
-				Symbol{Name: "d", Index: 1},
+				{Name: "a", Scope: FreeScope, Index: 0},
+				{Name: "b", Scope: FreeScope, Index: 1},
+				{Name: "c", Scope: LocalScope, Index: 0},
+				{Name: "d", Scope: LocalScope, Index: 1},
 			},
 		},
 		{
 			secondLocal,
 			[]Symbol{
-				Symbol{Name: "a", Index: 0},
-				Symbol{Name: "b", Index: 1},
-				Symbol{Name: "e", Index: 0},
-				Symbol{Name: "f", Index: 1},
+				{Name: "a", Scope: FreeScope, Index: 0},
+				{Name: "b", Scope: FreeScope, Index: 1},
+				{Name: "e", Scope: LocalScope, Index: 0},
+				{Name: "f", Scope: LocalScope, Index: 1},
 			},
 		},
 	}
@@ -109,6 +106,49 @@ func TestResolve(t *testing.T) {
 				t.Errorf("expected %s to resolve to %+v, got=%+v",
 					sym.Name, sym, result)
 			}
+		}
+	}
+}
+
+func TestResolveFreeSymbols(t *testing.T) {
+	global := NewSymbolTable()
+	global.Define("a")
+	global.Define("b")
+
+	firstLocal := NewEnclosedSymbolTable(global)
+	firstLocal.Define("c")
+	firstLocal.Define("d")
+
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+	secondLocal.Define("e")
+	secondLocal.Define("f")
+
+	expected := []Symbol{
+		{Name: "c", Scope: FreeScope, Index: 0},
+		{Name: "d", Scope: FreeScope, Index: 1},
+	}
+
+	for _, sym := range expected {
+		result, ok := secondLocal.Resolve(sym.Name)
+		if !ok {
+			t.Fatalf("name %s not resolvable", sym.Name)
+		}
+		if result != sym {
+			t.Errorf("expected %s to resolve to %+v, got=%+v", sym.Name, sym, result)
+		}
+	}
+
+	if len(secondLocal.FreeSymbols) != 2 {
+		t.Fatalf("wrong number of free symbols. got=%d", len(secondLocal.FreeSymbols))
+	}
+
+	wantFree := []Symbol{
+		{Name: "c", Scope: LocalScope, Index: 0},
+		{Name: "d", Scope: LocalScope, Index: 1},
+	}
+	for i, sym := range wantFree {
+		if secondLocal.FreeSymbols[i] != sym {
+			t.Errorf("wrong free symbol at %d. want=%+v, got=%+v", i, sym, secondLocal.FreeSymbols[i])
 		}
 	}
 }
