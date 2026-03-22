@@ -83,6 +83,7 @@ const (
 	OpGetBuiltin
 
 	OpClosure
+	OpCurrentClosure
 )
 
 func (o Opcode) String() string {
@@ -138,7 +139,8 @@ var definitions = map[Opcode]*Definition{
 
 	OpGetBuiltin: {"OpGetBuiltin", []int{1}},
 
-	OpClosure: {"OpClosure", []int{2, 1}},
+	OpClosure:        {"OpClosure", []int{2, 1}},
+	OpCurrentClosure: {"OpCurrentClosure", []int{}},
 }
 
 func Lookup(op byte) (*Definition, error) {
