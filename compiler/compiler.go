@@ -32,8 +32,14 @@ func New() *Compiler {
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
 	}
+
+	symbolTable := NewSymbolTable()
+	for i, v := range object.Builtins {
+		symbolTable.DefineBuiltin(i, v.Name)
+	}
+
 	return &Compiler{
-		symbolTable: NewSymbolTable(),
+		symbolTable: symbolTable,
 		constants:   []object.Object{},
 		scopes:      []CompilationScope{mainScope},
 		scopeIndex:  0,
@@ -376,5 +382,7 @@ func (c *Compiler) loadSymbol(s Symbol) {
 		c.emit(code.OpGetLocal, s.Index)
 	case FreeScope:
 		c.emit(code.OpGetFree, s.Index)
+	case BuiltinScope:
+		c.emit(code.OpGetBuiltin, s.Index)
 	}
 }

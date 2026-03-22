@@ -80,6 +80,8 @@ const (
 	OpGetFree
 	OpSetFree
 
+	OpGetBuiltin
+
 	OpClosure
 )
 
@@ -133,6 +135,8 @@ var definitions = map[Opcode]*Definition{
 
 	OpGetFree: {"OpGetFree", []int{2}},
 	OpSetFree: {"OpSetFree", []int{2}},
+
+	OpGetBuiltin: {"OpGetBuiltin", []int{1}},
 
 	OpClosure: {"OpClosure", []int{2, 1}},
 }

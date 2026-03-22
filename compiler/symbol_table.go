@@ -3,8 +3,9 @@ package compiler
 type SymbolScope string
 
 const (
-	LocalScope SymbolScope = "LOCAL"
-	FreeScope  SymbolScope = "FREE"
+	LocalScope   SymbolScope = "LOCAL"
+	FreeScope    SymbolScope = "FREE"
+	BuiltinScope SymbolScope = "BUILTIN"
 )
 
 type Symbol struct {
@@ -47,9 +48,9 @@ func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
 		if !ok {
 			return obj, ok
 		}
-		// if obj.Scope == GlobalScope || obj.Scope == BuiltinScope {
-		// 	return obj, ok
-		// }
+		if obj.Scope == BuiltinScope {
+			return obj, ok
+		}
 
 		free := s.defineFree(obj)
 		return free, true
@@ -64,5 +65,11 @@ func (s *SymbolTable) defineFree(original Symbol) Symbol {
 	symbol.Scope = FreeScope
 
 	s.store[original.Name] = symbol
+	return symbol
+}
+
+func (s *SymbolTable) DefineBuiltin(index int, name string) Symbol {
+	symbol := Symbol{Name: name, Index: index, Scope: BuiltinScope}
+	s.store[name] = symbol
 	return symbol
 }
