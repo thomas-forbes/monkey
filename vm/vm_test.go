@@ -666,6 +666,33 @@ func TestRecursiveFunctions(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestConditionalForStatements(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input:    `for (1 > 2) { 99; } 42;`,
+			expected: 42,
+		},
+		{
+			input:    `let loop = fn() { for (1 < 2) { return 42; } }; loop();`,
+			expected: 42,
+		},
+		{
+			input:    `let loop = fn() { for (!(1 > 2)) { if ((1 > 2)) { return 0; } return 7; } }; loop();`,
+			expected: 7,
+		},
+		{
+			input:    `let loop = fn() { for ((if (1 < 2) { 10 })) { return 55; } }; loop();`,
+			expected: 55,
+		},
+		{
+			input:    `let loop = fn() { for ((if (1 > 2) { 10 })) { return 0; } return 88; }; loop();`,
+			expected: 88,
+		},
+	}
+
+	runVmTests(t, tests)
+}
+
 func TestRecursiveFibonacci(t *testing.T) {
 	tests := []vmTestCase{
 		{

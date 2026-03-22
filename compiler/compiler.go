@@ -312,7 +312,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
-		conditionPos := len(c.currentInstructions())
+		conditionPos := len(c.currentInstructions()) - 3 // OpJumpNotTruthy is 3 bytes long
 
 		err = c.Compile(node.Body)
 		if err != nil {

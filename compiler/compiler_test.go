@@ -1079,3 +1079,43 @@ func TestRecursiveFunctions(t *testing.T) {
 
 	runCompilerTests(t, tests)
 }
+
+func TestConditionalForStatements(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input:             "for false { 10; } 20;",
+			expectedConstants: []interface{}{10, 20},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpFalse),
+				code.Make(code.OpJumpNotTruthy, 11),
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpJump, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `fn() { for true { return 42; } }()`,
+			expectedConstants: []interface{}{
+				42,
+				[]code.Instructions{
+					code.Make(code.OpTrue),
+					code.Make(code.OpJumpNotTruthy, 11),
+					code.Make(code.OpConstant, 0),
+					code.Make(code.OpReturnValue),
+					code.Make(code.OpJump, 0),
+					code.Make(code.OpNull),
+					code.Make(code.OpReturnValue),
+				},
+			},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpClosure, 1, 0),
+				code.Make(code.OpCall, 0),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
