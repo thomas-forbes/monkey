@@ -75,7 +75,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !ok {
 			return fmt.Errorf("undefined variable %s", node.Value)
 		}
-		c.emit(code.OpGetLocal, symbol.Index)
+		c.loadSymbol(symbol)
 	case *ast.LetStatement:
 		symbol := c.symbolTable.Define(node.Name.Value)
 		err := c.Compile(node.Value)
@@ -245,11 +245,17 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpNull)
 			c.emit(code.OpReturnValue)
 		}
+
+		freeSymbols := c.symbolTable.FreeSymbols
 		numLocals := c.symbolTable.numDefinitions
 		instructions := c.leaveScope()
 
+		for _, s := range freeSymbols {
+			c.loadSymbol(s)
+		}
+
 		compiledFn := &object.CompiledFunction{Instructions: instructions, NumLocals: numLocals}
-		c.emit(code.OpClosure, c.addConstant(compiledFn), 0)
+		c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
 	case *ast.ReturnStatement:
 		err := c.Compile(node.ReturnValue)
 		if err != nil {
@@ -347,4 +353,13 @@ func (c *Compiler) leaveScope() code.Instructions {
 	c.symbolTable = c.symbolTable.Outer
 
 	return instructions
+}
+
+func (c *Compiler) loadSymbol(s Symbol) {
+	switch s.Scope {
+	case LocalScope:
+		c.emit(code.OpGetLocal, s.Index)
+	case FreeScope:
+		c.emit(code.OpGetFree, s.Index)
+	}
 }
