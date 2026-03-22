@@ -913,6 +913,49 @@ func TestForRangeStatement(t *testing.T) {
 	}
 }
 
+func TestForConditionStatement(t *testing.T) {
+	tests := []struct {
+		input      string
+		condString string
+		bodyString string
+	}{
+		{
+			"for i < 10 { i = i + 1; }",
+			"(i < 10)",
+			"i = (i + 1)",
+		},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain %d statements. got=%d\n",
+				1, len(program.Statements))
+		}
+
+		stmt, ok := program.Statements[0].(*ast.ForStatement)
+		if !ok {
+			t.Fatalf("program.Statements[0] is not ast.ForStatement. got=%T", program.Statements[0])
+		}
+
+		clause, ok := stmt.Clause.(*ast.ForConditionalClause)
+		if !ok {
+			t.Fatalf("stmt.Clause is not ast.ForConditionClause. got=%T", stmt.Clause)
+		}
+
+		if clause.Condition.String() != tt.condString {
+			t.Errorf("stmt.Condition.String() not %q. got=%q", tt.condString, clause.Condition.String())
+		}
+
+		if stmt.Body.String() != tt.bodyString {
+			t.Errorf("stmt.Body.String() not %q. got=%q", tt.bodyString, stmt.Body.String())
+		}
+	}
+}
+
 func TestRangeExpression(t *testing.T) {
 	tests := []struct {
 		input       string

@@ -293,6 +293,34 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 		c.emit(code.OpCall, len(node.Arguments))
+	// case *ast.ForInClause:
+	// 	err := c.Compile(node.Iterable)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	c.emit(code.OpJumpNotTruthy, -1)
+	case *ast.ForConditionalClause:
+		err := c.Compile(node.Condition)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpJumpNotTruthy, -1)
+	case *ast.ForStatement:
+		startPos := len(c.currentInstructions())
+		err := c.Compile(node.Clause)
+		if err != nil {
+			return err
+		}
+
+		conditionPos := len(c.currentInstructions())
+
+		err = c.Compile(node.Body)
+		if err != nil {
+			return err
+		}
+
+		c.emit(code.OpJump, startPos)
+		c.changeOperand(conditionPos, len(c.currentInstructions()))
 	default:
 		return fmt.Errorf("unkown node type %T", node)
 	}

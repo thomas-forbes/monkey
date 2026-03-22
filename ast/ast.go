@@ -365,16 +365,21 @@ func (hl *HashLiteral) String() string {
 
 type ForControlClause interface {
 	forControlClause()
+	TokenLiteral() string
 	String() string
 }
 
 type ForInClause struct {
+	Token    token.Token // The 'in' token
 	Key      *Identifier
 	Value    *Identifier
 	Iterable Expression
 }
 
 func (fic *ForInClause) forControlClause() {}
+func (fic *ForInClause) TokenLiteral() string {
+	return fic.Token.Literal
+}
 func (fic *ForInClause) String() string {
 	var out bytes.Buffer
 	if fic.Key != nil {
@@ -396,6 +401,9 @@ type ForConditionalClause struct {
 }
 
 func (fcc *ForConditionalClause) forControlClause() {}
+func (fcc *ForConditionalClause) TokenLiteral() string {
+	return fcc.Condition.TokenLiteral()
+}
 func (fcc *ForConditionalClause) String() string {
 	return fcc.Condition.String()
 }

@@ -38,10 +38,12 @@ var precedences = map[token.TokenType]int{
 }
 
 type Parser struct {
-	l         *lexer.Lexer
+	l *lexer.Lexer
+
 	curToken  token.Token
 	peekToken token.Token
-	errors    []string
+
+	errors []string
 
 	prefixParseFns map[token.TokenType]prefixParseFn
 	infixParseFns  map[token.TokenType]infixParseFn
@@ -89,8 +91,7 @@ func (p *Parser) Errors() []string {
 }
 
 func (p *Parser) peekError(t token.TokenType) {
-	msg := fmt.Sprintf("expected next token to be %s, got %s instead",
-		t, p.peekToken.Type)
+	msg := fmt.Sprintf("expected next token to be %s, got %s instead", t, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
 }
 
@@ -493,7 +494,12 @@ func (p *Parser) parseHashLiteral() ast.Expression {
 func (p *Parser) parseForStatement() *ast.ForStatement {
 	stmt := &ast.ForStatement{Token: p.curToken}
 
-	p.nextToken()
+	clauseTokens := make([]token.Token, 0)
+	for !p.peekTokenIs(token.RBRACE) {
+		clauseTokens = append(clauseTokens, p.peekToken)
+		p.nextToken()
+	}
+
 	bindings := p.parseIdentifierList(token.IN)
 
 	clause := &ast.ForInClause{}
