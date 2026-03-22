@@ -280,7 +280,6 @@ func TestGlobalLetStatements(t *testing.T) {
 }
 
 func TestCallingFunctionsWithoutArguments(t *testing.T) {
-	return
 	tests := []vmTestCase{
 		// {
 		// 	input:    "fn() { 5 + 10; }();",
@@ -313,7 +312,6 @@ func TestFunctionsWithReturnStatement(t *testing.T) {
 }
 
 func TestFunctionsWithoutReturnValue(t *testing.T) {
-	return
 	tests := []vmTestCase{
 		{
 			input:    ` fn() { }(); `,
@@ -327,8 +325,21 @@ func TestFunctionsWithoutReturnValue(t *testing.T) {
 	runVmTests(t, tests)
 }
 
+func TestLetStatementScopes(t *testing.T) {
+	tests := []vmTestCase{
+		{
+			input:    ` let num = 1; fn() { num }(); `,
+			expected: 1,
+		},
+		{
+			input:    ` fn() { let num = 1; num }(); `,
+			expected: 1,
+		},
+	}
+	runVmTests(t, tests)
+}
+
 func TestFirstClassFunctions(t *testing.T) {
-	return
 	tests := []vmTestCase{
 		{
 			input: `
@@ -342,7 +353,6 @@ func TestFirstClassFunctions(t *testing.T) {
 }
 
 func TestCallingFunctionsWithBindings(t *testing.T) {
-	return
 	tests := []vmTestCase{
 		{
 			input: `
