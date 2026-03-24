@@ -77,12 +77,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
-	case *ast.Identifier:
-		symbol, ok := c.symbolTable.Resolve(node.Value)
-		if !ok {
-			return fmt.Errorf("identifier not found: %s", node.Value)
-		}
-		c.getSymbol(symbol)
+
 	case *ast.LetStatement:
 		symbol, ok := c.symbolTable.Define(node.Initialization.Name.Value, node.Initialization.Mutable)
 		if !ok {
@@ -94,6 +89,80 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 
 		c.setSymbol(symbol)
+	case *ast.ReturnStatement:
+		err := c.Compile(node.ReturnValue)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpReturnValue)
+	case *ast.ExpressionStatement:
+		err := c.Compile(node.Expression)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpPop)
+
+	case *ast.ForStatement:
+		// hacky solution to anchor continue instruction pointing to 0
+		c.enterScope()
+		c.symbolTable = c.symbolTable.Outer
+
+		switch clause := node.Clause.(type) {
+		case *ast.ForInClause:
+			panic("for-in loops not implemented")
+		case *ast.ForConditionalClause:
+			err := c.Compile(clause.Condition)
+			if err != nil {
+				return err
+			}
+		}
+
+		conditionPos := c.emit(code.OpJumpNotTruthy, -1)
+
+		err := c.Compile(node.Body)
+		if err != nil {
+			return err
+		}
+
+		c.emit(code.OpJump, 0)
+		c.changeOperand(conditionPos, len(c.currentInstructions()))
+
+		c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
+		instructions := c.leaveScope()
+		c.normalizeAndAppendInstructions(instructions)
+	case *ast.ContinueStatement:
+		c.emit(code.OpJump, 0)
+	case *ast.BreakStatement:
+		if node.Value != nil {
+			err := c.Compile(node.Value)
+			if err != nil {
+				return err
+			}
+		}
+		c.emit(code.OpPop)
+		c.emit(code.OpJump, -1)
+
+	case *ast.Identifier:
+		symbol, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("identifier not found: %s", node.Value)
+		}
+		c.getSymbol(symbol)
+	case *ast.AssignmentExpression:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+		symbol, ok := c.symbolTable.Resolve(node.Name.Value)
+		if !ok {
+			return fmt.Errorf("identifier not found: %s", node.Name.Value)
+		}
+		if !symbol.Mutable {
+			return fmt.Errorf("cannot assign to immutable variable: %s", node.Name.Value)
+		}
+		c.setSymbol(symbol)
+		c.getSymbol(symbol)
+
 	case *ast.IfExpression:
 		branchEndJumpPos := make([]int, len(node.Branches))
 		hasElse := false
@@ -133,12 +202,6 @@ func (c *Compiler) Compile(node ast.Node) error {
 		for _, pos := range branchEndJumpPos {
 			c.changeOperand(pos, endPos)
 		}
-	case *ast.ExpressionStatement:
-		err := c.Compile(node.Expression)
-		if err != nil {
-			return err
-		}
-		c.emit(code.OpPop)
 	case *ast.PrefixExpression:
 		err := c.Compile(node.Right)
 		if err != nil {
@@ -192,6 +255,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		default:
 			return fmt.Errorf("unkown operator %s", node.Operator)
 		}
+
 	case *ast.Boolean:
 		if node.Value {
 			c.emit(code.OpTrue)
@@ -231,6 +295,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 		c.emit(code.OpHash, len(node.Pairs)*2)
+
 	case *ast.IndexExpression:
 		err := c.Compile(node.Left)
 		if err != nil {
@@ -241,6 +306,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		c.emit(code.OpIndex)
+
 	case *ast.FunctionLiteral:
 		c.enterScope()
 
@@ -282,12 +348,6 @@ func (c *Compiler) Compile(node ast.Node) error {
 			NumParameters: len(node.Parameters),
 		}
 		c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
-	case *ast.ReturnStatement:
-		err := c.Compile(node.ReturnValue)
-		if err != nil {
-			return err
-		}
-		c.emit(code.OpReturnValue)
 	case *ast.CallExpression:
 		err := c.Compile(node.Function)
 		if err != nil {
@@ -300,59 +360,6 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 		c.emit(code.OpCall, len(node.Arguments))
-	case *ast.ContinueStatement:
-		c.emit(code.OpJump, 0)
-	case *ast.BreakStatement:
-		if node.Value != nil {
-			err := c.Compile(node.Value)
-			if err != nil {
-				return err
-			}
-		}
-		c.emit(code.OpPop)
-		c.emit(code.OpJump, -1)
-	case *ast.ForStatement:
-		// hacky solution to anchor continue instruction pointing to 0
-		c.enterScope()
-		c.symbolTable = c.symbolTable.Outer
-
-		switch clause := node.Clause.(type) {
-		case *ast.ForInClause:
-			panic("for-in loops not implemented")
-		case *ast.ForConditionalClause:
-			err := c.Compile(clause.Condition)
-			if err != nil {
-				return err
-			}
-		}
-
-		conditionPos := c.emit(code.OpJumpNotTruthy, -1)
-
-		err := c.Compile(node.Body)
-		if err != nil {
-			return err
-		}
-
-		c.emit(code.OpJump, 0)
-		c.changeOperand(conditionPos, len(c.currentInstructions()))
-
-		c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
-		instructions := c.leaveScope()
-		c.normalizeAndAppendInstructions(instructions)
-	case *ast.AssignmentExpression:
-		err := c.Compile(node.Value)
-		if err != nil {
-			return err
-		}
-		symbol, ok := c.symbolTable.Resolve(node.Name.Value)
-		if !ok {
-			return fmt.Errorf("identifier not found: %s", node.Name.Value)
-		}
-		if !symbol.Mutable {
-			return fmt.Errorf("cannot assign to immutable variable: %s", node.Name.Value)
-		}
-		c.setSymbol(symbol)
-		c.getSymbol(symbol)
 	default:
 		return fmt.Errorf("unkown node type %T", node)
 	}
