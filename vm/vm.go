@@ -55,8 +55,10 @@ func (vm *VM) popFrame() *Frame {
 const MaxFrames = 1024
 
 func New(bytecode *compiler.Bytecode) *VM {
-	sp := 0
+	return NewWithState(bytecode, make([]object.Object, StackSize), 0)
+}
 
+func NewWithState(bytecode *compiler.Bytecode, stack []object.Object, sp int) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions, NumLocals: bytecode.NumLocals}
 	mainClosure := &object.Closure{Fn: mainFn}
 	mainFrame := NewFrame(mainClosure, sp)
@@ -67,11 +69,15 @@ func New(bytecode *compiler.Bytecode) *VM {
 
 	return &VM{
 		constants:   bytecode.Constants,
-		stack:       make([]object.Object, StackSize),
+		stack:       stack,
 		sp:          sp,
 		frames:      frames,
 		framesIndex: 1,
 	}
+}
+
+func (vm *VM) GetSP() int {
+	return vm.sp
 }
 
 func (vm *VM) LastPoppedStackElem() object.Object {

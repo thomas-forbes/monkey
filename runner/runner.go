@@ -72,13 +72,13 @@ func runVM(program *ast.Program, session Session) (object.Object, time.Duration)
 	if !ok {
 		panic("invalid session type for VM engine")
 	}
-	comp := compiler.NewWithState(state.symbolTable, *state.constants)
+	comp := compiler.NewWithState(state.symbolTable, state.constants)
 
 	if err := comp.Compile(program); err != nil {
 		return err, 0
 	}
 
-	machine := vm.New(comp.Bytecode())
+	machine := vm.NewWithState(comp.Bytecode(), state.stack, *state.sp)
 
 	start := time.Now()
 	err := machine.Run()
@@ -86,6 +86,9 @@ func runVM(program *ast.Program, session Session) (object.Object, time.Duration)
 	if err != nil {
 		return object.NewError(nil, err), 0
 	}
+
+	sp := machine.GetSP()
+	state.sp = &sp
 
 	result := machine.LastPoppedStackElem()
 	return result, duration

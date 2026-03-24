@@ -3,6 +3,7 @@ package runner
 import (
 	"monkey/compiler"
 	"monkey/object"
+	"monkey/vm"
 )
 
 type Session interface {
@@ -14,10 +15,12 @@ func NewSession(engine Engine) Session {
 	case INTERPRETER:
 		return &EvalSession{env: object.NewEnvironment()}
 	case VM:
+		sp := 0
 		return &VMSession{
 			symbolTable: compiler.NewMasterSymbolTable(),
-			constants:   &[]object.Object{},
-			// globals:     &[]object.Object{},
+			constants:   []object.Object{},
+			stack:       make([]object.Object, vm.StackSize),
+			sp:          &sp,
 		}
 	default:
 		panic("unknown engine: " + string(engine))
@@ -32,8 +35,9 @@ func (s *EvalSession) session() {}
 
 type VMSession struct {
 	symbolTable *compiler.SymbolTable
-	constants   *[]object.Object
-	// globals     *[]object.Object
+	constants   []object.Object
+	stack       []object.Object
+	sp          *int
 }
 
 func (s *VMSession) session() {}
