@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"math"
 	"monkey/ast"
 	"monkey/code"
 	"monkey/object"
@@ -299,34 +300,45 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 		c.emit(code.OpCall, len(node.Arguments))
-	// case *ast.ForInClause:
-	// 	err := c.Compile(node.Iterable)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	c.emit(code.OpJumpNotTruthy, -1)
-	case *ast.ForConditionalClause:
-		err := c.Compile(node.Condition)
-		if err != nil {
-			return err
+	case *ast.ContinueStatement:
+		c.emit(code.OpJump, 0)
+	case *ast.BreakStatement:
+		if node.Value != nil {
+			err := c.Compile(node.Value)
+			if err != nil {
+				return err
+			}
 		}
-		c.emit(code.OpJumpNotTruthy, -1)
+		c.emit(code.OpPop)
+		c.emit(code.OpJump, -1)
 	case *ast.ForStatement:
-		startPos := len(c.currentInstructions())
-		err := c.Compile(node.Clause)
+		// hacky solution to anchor continue instruction pointing to 0
+		c.enterScope()
+		c.symbolTable = c.symbolTable.Outer
+
+		switch clause := node.Clause.(type) {
+		case *ast.ForInClause:
+			panic("for-in loops not implemented")
+		case *ast.ForConditionalClause:
+			err := c.Compile(clause.Condition)
+			if err != nil {
+				return err
+			}
+		}
+
+		conditionPos := c.emit(code.OpJumpNotTruthy, -1)
+
+		err := c.Compile(node.Body)
 		if err != nil {
 			return err
 		}
 
-		conditionPos := len(c.currentInstructions()) - 3 // OpJumpNotTruthy is 3 bytes long
-
-		err = c.Compile(node.Body)
-		if err != nil {
-			return err
-		}
-
-		c.emit(code.OpJump, startPos)
+		c.emit(code.OpJump, 0)
 		c.changeOperand(conditionPos, len(c.currentInstructions()))
+
+		c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
+		instructions := c.leaveScope()
+		c.normalizeAndAppendInstructions(instructions)
 	case *ast.AssignmentExpression:
 		err := c.Compile(node.Value)
 		if err != nil {
@@ -357,6 +369,30 @@ func (c *Compiler) setLastInstruction(op code.Opcode, pos int) {
 	last := EmittedInstruction{Opcode: op, Position: pos}
 	c.scopes[c.scopeIndex].previousInstruction = previous
 	c.scopes[c.scopeIndex].lastInstruction = last
+}
+
+func (c *Compiler) normalizeAndAppendInstructions(ins code.Instructions) {
+	offset := len(c.currentInstructions())
+	for ip := 0; ip < len(ins); ip++ {
+		op := code.Opcode(ins[ip])
+		switch op {
+		case code.OpJump, code.OpJumpNotTruthy:
+			pos := int(code.ReadUint16(ins[ip+1:]))
+			if pos == math.MaxUint16 {
+				pos = len(ins)
+			}
+			ip += 2
+			c.emit(op, pos+offset)
+		default:
+			def, err := code.Lookup(byte(op))
+			if err != nil {
+				panic(fmt.Sprintf("opcode %d undefined", op))
+			}
+			operands, read := code.ReadOperands(def, ins[ip+1:])
+			ip += read
+			c.emit(op, operands...)
+		}
+	}
 }
 
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {

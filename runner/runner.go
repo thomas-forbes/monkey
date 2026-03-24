@@ -75,6 +75,7 @@ func RunProgram(engine Engine, input string, env *object.Environment) (object.Ob
 		if err != nil {
 			return &object.Error{Message: err.Error()}, env, 0
 		}
+		// fmt.Println(comp.Bytecode().Instructions)
 		machine := vm.New(comp.Bytecode())
 
 		start := time.Now()
