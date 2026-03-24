@@ -83,7 +83,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.loadSymbol(symbol)
 	case *ast.LetStatement:
-		symbol := c.symbolTable.Define(node.Name.Value)
+		symbol := c.symbolTable.Define(node.Initialization.Name.Value, node.Initialization.Mutable)
 		err := c.Compile(node.Value)
 		if err != nil {
 			return err
@@ -245,7 +245,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 
 		for _, p := range node.Parameters {
-			c.symbolTable.Define(p.Value)
+			c.symbolTable.Define(p.Name.Value, p.Mutable)
 		}
 
 		err := c.Compile(node.Body)
@@ -321,6 +321,19 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 		c.emit(code.OpJump, startPos)
 		c.changeOperand(conditionPos, len(c.currentInstructions()))
+	case *ast.AssignmentExpression:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+		symbol, ok := c.symbolTable.Resolve(node.Name.Value)
+		if !ok {
+			return fmt.Errorf("undefined variable: %s", node.Name.Value)
+		}
+		if !symbol.Mutable {
+			return fmt.Errorf("cannot assign to immutable variable: %s", node.Name.Value)
+		}
+		c.loadSymbol(symbol)
 	default:
 		return fmt.Errorf("unkown node type %T", node)
 	}

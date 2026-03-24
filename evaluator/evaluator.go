@@ -313,7 +313,7 @@ func extendFunctionEnv(
 ) *object.Environment {
 	env := object.NewEnclosedEnvironment(fn.Env)
 	for paramIdx, param := range fn.Parameters {
-		env.Set(param.Value, args[paramIdx], false, true)
+		env.Set(param.Name.Value, args[paramIdx], param.Mutable, true)
 	}
 	return env
 }
@@ -391,11 +391,11 @@ func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Ob
 	if IsError(val) {
 		return val
 	}
-	name := node.Name.Value
+	name := node.Initialization.Name.Value
 	if entity, ok := env.Get(name); ok && entity != object.NULL_ENTITY {
 		return newError("cannot reinitialize variable: %s", name)
 	}
-	env.Set(name, val, node.Mutable, true)
+	env.Set(name, val, node.Initialization.Mutable, true)
 	return object.NULL
 }
 
@@ -410,7 +410,7 @@ func evalAssignmentExpression(node *ast.AssignmentExpression, env *object.Enviro
 		return newError("undefined variable: %s", name)
 	}
 	if !entity.Mutable {
-		return newError("cannot reassign unmutable variable: %s", name)
+		return newError("cannot assign to immutable variable: %s", name)
 	}
 	env.Set(name, val, entity.Mutable, false)
 	return val

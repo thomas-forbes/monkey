@@ -34,7 +34,7 @@ func TestLetStatements(t *testing.T) {
 		if !testLiteralExpression(t, val, tt.expectedValue) {
 			return
 		}
-		mutable := stmt.(*ast.LetStatement).Mutable
+		mutable := stmt.(*ast.LetStatement).Initialization.Mutable
 		if mutable != tt.expectedMutable {
 			t.Errorf("stmt.Mutable not %t. got=%t", tt.expectedMutable, mutable)
 		}
@@ -51,13 +51,13 @@ func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
 		t.Errorf("s not *ast.LetStatement. got=%T", s)
 		return false
 	}
-	if letStmt.Name.Value != name {
-		t.Errorf("letStmt.Name.Value not '%s'. got=%s", name, letStmt.Name.Value)
+	if letStmt.Initialization.Name.Value != name {
+		t.Errorf("letStmt.Name.Value not '%s'. got=%s", name, letStmt.Initialization.Name.Value)
 		return false
 	}
-	if letStmt.Name.TokenLiteral() != name {
+	if letStmt.Initialization.Name.TokenLiteral() != name {
 		t.Errorf("letStmt.Name.TokenLiteral() not '%s'. got=%s",
-			name, letStmt.Name.TokenLiteral())
+			name, letStmt.Initialization.Name.TokenLiteral())
 		return false
 	}
 	return true
@@ -589,8 +589,8 @@ func TestFunctionLiteralParsing(t *testing.T) {
 	if len(function.Parameters) != 2 {
 		t.Fatalf("function literal parameters wrong. want 2, got=%d\n", len(function.Parameters))
 	}
-	testLiteralExpression(t, function.Parameters[0], "x")
-	testLiteralExpression(t, function.Parameters[1], "y")
+	testLiteralExpression(t, function.Parameters[0].Name, "x")
+	testLiteralExpression(t, function.Parameters[1].Name, "y")
 	if len(function.Body.Statements) != 1 {
 		t.Fatalf("function.Body.Statements has not 1 statements. got=%d\n", len(function.Body.Statements))
 
@@ -622,7 +622,7 @@ func TestFunctionParameterParsing(t *testing.T) {
 			t.Errorf("length parameters wrong. want %d, got=%d\n", len(tt.expectedParams), len(function.Parameters))
 		}
 		for i, ident := range tt.expectedParams {
-			testLiteralExpression(t, function.Parameters[i], ident)
+			testLiteralExpression(t, function.Parameters[i].Name, ident)
 		}
 	}
 }

@@ -5,44 +5,44 @@ import "testing"
 func TestDefine(t *testing.T) {
 	expected := map[string]Symbol{
 		"a": {Name: "a", Scope: LocalScope, Index: 0},
-		"b": {Name: "b", Scope: LocalScope, Index: 1},
+		"b": {Name: "b", Scope: LocalScope, Index: 1, Mutable: true},
 		"c": {Name: "c", Scope: LocalScope, Index: 0},
 		"d": {Name: "d", Scope: LocalScope, Index: 1},
 		"e": {Name: "e", Scope: LocalScope, Index: 0},
 		"f": {Name: "f", Scope: LocalScope, Index: 1},
 	}
 	global := NewSymbolTable()
-	a := global.Define("a")
+	a := global.Define("a", false)
 	if a != expected["a"] {
 		t.Errorf("expected a=%+v, got=%+v", expected["a"], a)
 	}
-	b := global.Define("b")
+	b := global.Define("b", true)
 	if b != expected["b"] {
 		t.Errorf("expected b=%+v, got=%+v", expected["b"], b)
 	}
 	firstLocal := NewEnclosedSymbolTable(global)
-	c := firstLocal.Define("c")
+	c := firstLocal.Define("c", false)
 	if c != expected["c"] {
 		t.Errorf("expected c=%+v, got=%+v", expected["c"], c)
 	}
-	d := firstLocal.Define("d")
+	d := firstLocal.Define("d", false)
 	if d != expected["d"] {
 		t.Errorf("expected d=%+v, got=%+v", expected["d"], d)
 	}
 	secondLocal := NewEnclosedSymbolTable(firstLocal)
-	e := secondLocal.Define("e")
+	e := secondLocal.Define("e", false)
 	if e != expected["e"] {
 		t.Errorf("expected e=%+v, got=%+v", expected["e"], e)
 	}
-	f := secondLocal.Define("f")
+	f := secondLocal.Define("f", false)
 	if f != expected["f"] {
 		t.Errorf("expected f=%+v, got=%+v", expected["f"], f)
 	}
 }
 func TestResolveGlobal(t *testing.T) {
 	global := NewSymbolTable()
-	global.Define("a")
-	global.Define("b")
+	global.Define("a", false)
+	global.Define("b", false)
 	expected := []Symbol{
 		{Name: "a", Scope: LocalScope, Index: 0},
 		{Name: "b", Scope: LocalScope, Index: 1},
@@ -62,16 +62,16 @@ func TestResolveGlobal(t *testing.T) {
 
 func TestResolve(t *testing.T) {
 	global := NewSymbolTable()
-	global.Define("a")
-	global.Define("b")
+	global.Define("a", false)
+	global.Define("b", false)
 
 	firstLocal := NewEnclosedSymbolTable(global)
-	firstLocal.Define("c")
-	firstLocal.Define("d")
+	firstLocal.Define("c", false)
+	firstLocal.Define("d", false)
 
 	secondLocal := NewEnclosedSymbolTable(firstLocal)
-	secondLocal.Define("e")
-	secondLocal.Define("f")
+	secondLocal.Define("e", false)
+	secondLocal.Define("f", false)
 	tests := []struct {
 		table           *SymbolTable
 		expectedSymbols []Symbol
@@ -112,16 +112,16 @@ func TestResolve(t *testing.T) {
 
 func TestResolveFreeSymbols(t *testing.T) {
 	global := NewSymbolTable()
-	global.Define("a")
-	global.Define("b")
+	global.Define("a", false)
+	global.Define("b", false)
 
 	firstLocal := NewEnclosedSymbolTable(global)
-	firstLocal.Define("c")
-	firstLocal.Define("d")
+	firstLocal.Define("c", false)
+	firstLocal.Define("d", false)
 
 	secondLocal := NewEnclosedSymbolTable(firstLocal)
-	secondLocal.Define("e")
-	secondLocal.Define("f")
+	secondLocal.Define("e", false)
+	secondLocal.Define("f", false)
 
 	expected := []Symbol{
 		{Name: "c", Scope: FreeScope, Index: 0},
@@ -203,7 +203,7 @@ func TestDefineAndResolveFunctionName(t *testing.T) {
 func TestShadowingFunctionName(t *testing.T) {
 	global := NewSymbolTable()
 	global.DefineFunctionName("a")
-	global.Define("a")
+	global.Define("a", false)
 
 	expected := Symbol{Name: "a", Scope: LocalScope, Index: 0}
 

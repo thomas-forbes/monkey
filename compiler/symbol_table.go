@@ -10,9 +10,10 @@ const (
 )
 
 type Symbol struct {
-	Name  string
-	Scope SymbolScope
-	Index int
+	Name    string
+	Scope   SymbolScope
+	Index   int
+	Mutable bool
 }
 
 type SymbolTable struct {
@@ -35,8 +36,8 @@ func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
 	return s
 }
 
-func (s *SymbolTable) Define(name string) Symbol {
-	symbol := Symbol{Name: name, Scope: LocalScope, Index: s.numDefinitions}
+func (s *SymbolTable) Define(name string, mutable bool) Symbol {
+	symbol := Symbol{Name: name, Scope: LocalScope, Index: s.numDefinitions, Mutable: mutable}
 	s.store[name] = symbol
 	s.numDefinitions++
 	return symbol
@@ -62,7 +63,7 @@ func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
 func (s *SymbolTable) defineFree(original Symbol) Symbol {
 	s.FreeSymbols = append(s.FreeSymbols, original)
 
-	symbol := Symbol{Name: original.Name, Index: len(s.FreeSymbols) - 1}
+	symbol := Symbol{Name: original.Name, Index: len(s.FreeSymbols) - 1, Mutable: original.Mutable}
 	symbol.Scope = FreeScope
 
 	s.store[original.Name] = symbol
@@ -70,13 +71,13 @@ func (s *SymbolTable) defineFree(original Symbol) Symbol {
 }
 
 func (s *SymbolTable) DefineBuiltin(index int, name string) Symbol {
-	symbol := Symbol{Name: name, Index: index, Scope: BuiltinScope}
+	symbol := Symbol{Name: name, Index: index, Scope: BuiltinScope, Mutable: false}
 	s.store[name] = symbol
 	return symbol
 }
 
 func (s *SymbolTable) DefineFunctionName(name string) Symbol {
-	symbol := Symbol{Name: name, Index: 0, Scope: FunctionScope}
+	symbol := Symbol{Name: name, Index: 0, Scope: FunctionScope, Mutable: false}
 	s.store[name] = symbol
 	return symbol
 }

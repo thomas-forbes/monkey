@@ -43,11 +43,24 @@ func (p *Program) String() string {
 	return out.String()
 }
 
-type LetStatement struct {
-	Token   token.Token // the token.LET token
+type Initialization struct {
 	Name    *Identifier
 	Mutable bool
-	Value   Expression
+}
+
+func (i *Initialization) String() string {
+	var out bytes.Buffer
+	if i.Mutable {
+		out.WriteString("mut ")
+	}
+	out.WriteString(i.Name.String())
+	return out.String()
+}
+
+type LetStatement struct {
+	Token          token.Token // the token.LET token
+	Initialization *Initialization
+	Value          Expression
 }
 
 func (ls *LetStatement) statementNode()       {}
@@ -55,7 +68,7 @@ func (ls *LetStatement) TokenLiteral() string { return ls.Token.Literal }
 func (ls *LetStatement) String() string {
 	var out bytes.Buffer
 	out.WriteString(ls.TokenLiteral() + " ")
-	out.WriteString(ls.Name.String())
+	out.WriteString(ls.Initialization.String())
 	out.WriteString(" = ")
 	if ls.Value != nil {
 		out.WriteString(ls.Value.String())
@@ -253,7 +266,7 @@ func (bs *BlockStatement) String() string {
 type FunctionLiteral struct {
 	Token      token.Token // The 'fn' token
 	Name       string
-	Parameters []*Identifier
+	Parameters []*Initialization
 	Body       *BlockStatement
 }
 

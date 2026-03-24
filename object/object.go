@@ -95,7 +95,7 @@ func (e *Continue) Type() ObjectType   { return CONTINUE_OBJ }
 func (e *Continue) Inspect() string    { return "CONTINUE" }
 
 type Function struct {
-	Parameters []*ast.Identifier
+	Parameters []*ast.Initialization
 	Body       *ast.BlockStatement
 	Env        *Environment
 }

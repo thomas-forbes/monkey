@@ -184,16 +184,16 @@ func (p *Parser) parseContinueStatement() *ast.ContinueStatement {
 }
 
 func (p *Parser) parseLetStatement() *ast.LetStatement {
-	stmt := &ast.LetStatement{Token: p.curToken()}
+	stmt := &ast.LetStatement{Token: p.curToken(), Initialization: &ast.Initialization{}}
 	if p.peekTokenIs(token.MUT) {
-		stmt.Mutable = true
+		stmt.Initialization.Mutable = true
 		p.nextToken()
 	}
 
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
-	stmt.Name = &ast.Identifier{Token: p.curToken(), Value: p.curToken().Literal}
+	stmt.Initialization.Name = &ast.Identifier{Token: p.curToken(), Value: p.curToken().Literal}
 
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
@@ -203,7 +203,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	stmt.Value = p.parseExpression(LOWEST)
 
 	if fl, ok := stmt.Value.(*ast.FunctionLiteral); ok {
-		fl.Name = stmt.Name.Value
+		fl.Name = stmt.Initialization.Name.Value
 	}
 
 	if p.peekTokenIs(token.SEMICOLON) {
@@ -420,7 +420,7 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 		return nil
 	}
 	p.nextToken()
-	lit.Parameters = p.parseIdentifierList(token.RPAREN)
+	lit.Parameters = p.parseInitializationList(token.RPAREN)
 	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
@@ -429,17 +429,21 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 	return lit
 }
 
-func (p *Parser) parseIdentifierList(end token.TokenType) []*ast.Identifier {
-	identifiers := []*ast.Identifier{}
+func (p *Parser) parseInitializationList(end token.TokenType) []*ast.Initialization {
+	inits := []*ast.Initialization{}
 	for !p.curTokenIs(end) {
-		ident := &ast.Identifier{Token: p.curToken(), Value: p.curToken().Literal}
-		identifiers = append(identifiers, ident)
+		init := &ast.Initialization{Mutable: false}
+		if p.curTokenIs(token.MUT) {
+			init.Mutable = true
+		}
+		init.Name = &ast.Identifier{Token: p.curToken(), Value: p.curToken().Literal}
+		inits = append(inits, init)
 		if p.peekTokenIs(token.COMMA) {
 			p.nextToken()
 		}
 		p.nextToken()
 	}
-	return identifiers
+	return inits
 }
 
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
@@ -523,7 +527,7 @@ func (p *Parser) parseForStatement() *ast.ForStatement {
 	}
 
 	p.nextToken()
-	bindings := p.parseIdentifierList(token.IN)
+	bindings := p.parseInitializationList(token.IN)
 
 	clause := &ast.ForInClause{}
 	if len(bindings) != 1 && len(bindings) != 2 {
@@ -531,9 +535,9 @@ func (p *Parser) parseForStatement() *ast.ForStatement {
 		p.errors = append(p.errors, msg)
 		return nil
 	} else if len(bindings) == 2 {
-		clause.Value = bindings[1]
+		clause.Value = bindings[1].Name
 	}
-	clause.Key = bindings[0]
+	clause.Key = bindings[0].Name
 
 	if !p.expectCurTokenIs(token.IN) {
 		return nil

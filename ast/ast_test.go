@@ -10,9 +10,11 @@ func TestString(t *testing.T) {
 		Statements: []Statement{
 			&LetStatement{
 				Token: token.Token{Type: token.LET, Literal: "let"},
-				Name: &Identifier{
+				Initialization: &Initialization{Name: &Identifier{
 					Token: token.Token{Type: token.IDENT, Literal: "myVar"},
 					Value: "myVar"},
+					Mutable: true,
+				},
 				Value: &Identifier{
 					Token: token.Token{Type: token.IDENT, Literal: "anotherVar"},
 					Value: "anotherVar",
@@ -20,7 +22,7 @@ func TestString(t *testing.T) {
 			},
 		}}
 
-	if program.String() != "let myVar = anotherVar;" {
+	if program.String() != "let mut myVar = anotherVar;" {
 		t.Errorf("program.String() wrong. got=%q", program.String())
 	}
 }
