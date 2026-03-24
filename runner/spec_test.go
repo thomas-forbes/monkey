@@ -88,7 +88,7 @@ func TestSpec(t *testing.T) {
 				{name: "assignment preserves prior binding", input: "let mut a = 5; let b = a; a = 3; b;", expected: 5},
 				{name: "underscore discard", input: "let _ = 5; _;", expected: nil},
 				{name: "mutable function parameters", input: "let mut sum = fn(mut a, mut b) { a = a + 1; b = b + 1; a + b }; sum(1, 2);", expected: 5},
-				{name: "immutable function parameters", input: "let mut sum = fn(a, b) { a = a + 1; b = b + 1; a + b }; sum(1, 2);", expected: errorObject("cannot assign to immutable variable: a")},
+				{name: "immutable function parameters", input: "let mut sum = fn(a, b) { a = a + 1; b = b + 1; a + b }; sum(1, 2);", expected: errorObject(object.CannotAssignImmutableVariable{Name: "a"})},
 			},
 		},
 		{
@@ -138,7 +138,7 @@ x;`, expected: 5},
 // increment
 x = x + 1;
 // return
-x;`, expected: errorObject("cannot assign to immutable variable: x")},
+x;`, expected: errorObject(object.CannotAssignImmutableVariable{Name: "x"})},
 				{name: "comments inside blocks", input: `let mut x = 1;
 if (true) {
 	// mutate in branch
@@ -162,10 +162,10 @@ addOne(4);`, expected: 5},
 				{name: "len empty array", input: `len([])`, expected: 0},
 				{name: "append array", input: `append([], 1)`, expected: []int{1}},
 				{name: "puts builtin", input: `puts("hello", "world!")`, expected: nil},
-				{name: "len wrong type", input: `len(1)`, expected: errorObject("argument to `len` not supported, got INTEGER")},
-				{name: "len wrong arg count", input: `len("one", "two")`, expected: errorObject("wrong number of arguments. got=2, want=1")},
-				{name: "append wrong type", input: `append(1, 1)`, expected: errorObject("argument to `append` must be ARRAY, got INTEGER")},
-				{name: "function wrong arg count", input: `fn(a, b) { a + b; }(1);`, expected: errorObject("wrong number of arguments: want=2, got=1")},
+				{name: "len wrong type", input: `len(1)`, expected: errorObject(object.BuiltinArgumentType{Builtin: "len", Expected: "ARRAY or STRING", Got: "INTEGER"})},
+				{name: "len wrong arg count", input: `len("one", "two")`, expected: errorObject(object.WrongArgumentCount{Want: 1, Got: 2})},
+				{name: "append wrong type", input: `append(1, 1)`, expected: errorObject(object.BuiltinArgumentType{Builtin: "append", Expected: "ARRAY", Got: "INTEGER"})},
+				{name: "function wrong arg count", input: `fn(a, b) { a + b; }(1);`, expected: errorObject(object.WrongArgumentCount{Want: 2, Got: 1})},
 			},
 		},
 		{
@@ -214,16 +214,16 @@ addOne(4);`, expected: 5},
 		{
 			name: "errors",
 			cases: []specCase{
-				{name: "type mismatch", input: "5 + true;", expected: errorObject("unsupported types for binary operation: INTEGER BOOLEAN")},
-				{name: "type mismatch after statement", input: "5 + true; 5;", expected: errorObject("unsupported types for binary operation: INTEGER BOOLEAN")},
-				{name: "minus boolean", input: "-true", expected: errorObject("unsupported type for negation: BOOLEAN")},
-				{name: "boolean arithmetic", input: "true + false;", expected: errorObject("unsupported types for binary operation: BOOLEAN BOOLEAN")},
-				{name: "nested boolean arithmetic", input: "if (10 > 1) { true + false; }", expected: errorObject("unsupported types for binary operation: BOOLEAN BOOLEAN")},
-				{name: "unknown identifier", input: "foobar", expected: errorObject("identifier not found: foobar")},
-				{name: "unknown string operator", input: `"Hello" - "World"`, expected: errorObject("unknown operator: STRING STRING")},
-				{name: "reinitialize variable", input: `let a = 5; let a = 3;`, expected: errorObject("cannot reinitialize variable: a")},
-				{name: "reinitialize function paramater", input: `fn(a, a) {}(1, 1);`, expected: errorObject("cannot reinitialize variable: a")},
-				{name: "reassign immutable variable", input: `let a = 5; a = 3;`, expected: errorObject("cannot assign to immutable variable: a")},
+				{name: "type mismatch", input: "5 + true;", expected: errorObject(object.UnsupportedBinaryOperation{LeftType: "INTEGER", RightType: "BOOLEAN"})},
+				{name: "type mismatch after statement", input: "5 + true; 5;", expected: errorObject(object.UnsupportedBinaryOperation{LeftType: "INTEGER", RightType: "BOOLEAN"})},
+				{name: "minus boolean", input: "-true", expected: errorObject(object.UnsupportedUnaryOperation{Operator: "-", OperandType: "BOOLEAN"})},
+				{name: "boolean arithmetic", input: "true + false;", expected: errorObject(object.UnsupportedBinaryOperation{LeftType: "BOOLEAN", RightType: "BOOLEAN"})},
+				{name: "nested boolean arithmetic", input: "if (10 > 1) { true + false; }", expected: errorObject(object.UnsupportedBinaryOperation{LeftType: "BOOLEAN", RightType: "BOOLEAN"})},
+				{name: "unknown identifier", input: "foobar", expected: errorObject(object.UnknownIdentifier{Name: "foobar"})},
+				{name: "unknown string operator", input: `"Hello" - "World"`, expected: errorObject(object.UnknownOperator{LeftType: "STRING", RightType: "STRING"})},
+				{name: "reinitialize variable", input: `let a = 5; let a = 3;`, expected: errorObject(object.CannotReinitializeVariable{Name: "a"})},
+				{name: "reinitialize function paramater", input: `fn(a, a) {}(1, 1);`, expected: errorObject(object.CannotReinitializeVariable{Name: "a"})},
+				{name: "reassign immutable variable", input: `let a = 5; a = 3;`, expected: errorObject(object.CannotAssignImmutableVariable{Name: "a"})},
 			},
 		},
 		{
@@ -267,8 +267,8 @@ addOne(4);`, expected: 5},
 	}
 }
 
-func errorObject(message string) *object.Error {
-	return &object.Error{Message: message}
+func errorObject(detail error) *object.Error {
+	return object.NewError(nil, detail)
 }
 
 func assertExpectedObject(t *testing.T, expected interface{}, actual object.Object) {
@@ -349,8 +349,8 @@ func assertExpectedObject(t *testing.T, expected interface{}, actual object.Obje
 		if !ok {
 			t.Fatalf("object is not Error. got=%T (%+v)", actual, actual)
 		}
-		if errObj.Message != expected.Message {
-			t.Fatalf("error has wrong message. got=%q, want=%q", errObj.Message, expected.Message)
+		if errObj.Error() != expected.Error() {
+			t.Fatalf("error has wrong message. got=%q, want=%q", errObj.Error(), expected.Error())
 		}
 	default:
 		t.Fatalf("unhandled expected type %T", expected)

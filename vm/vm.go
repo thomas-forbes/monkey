@@ -290,8 +290,7 @@ func (vm *VM) executeBinaryOperation(op code.Opcode) error {
 	case leftType == object.STRING_OBJ && rightType == object.STRING_OBJ:
 		return vm.executeBinaryStringOperation(op, left, right)
 	default:
-		return fmt.Errorf("unsupported types for binary operation: %s %s",
-			leftType, rightType)
+		return object.NewUnsupportedBinaryOperation(nil, string(leftType), string(rightType))
 	}
 }
 
@@ -300,7 +299,7 @@ func (vm *VM) executeBinaryStringOperation(
 	left, right object.Object,
 ) error {
 	if op != code.OpAdd {
-		return fmt.Errorf("unknown operator: STRING STRING")
+		return object.NewUnknownOperator(nil, "", string(left.Type()), string(right.Type()), "")
 	}
 	leftValue := left.(*object.String).Value
 	rightValue := right.(*object.String).Value
@@ -324,7 +323,7 @@ func (vm *VM) executeBinaryIntegerOperation(
 	case code.OpDiv:
 		result = leftValue / rightValue
 	default:
-		return fmt.Errorf("unknown integer operator: %d", op)
+		return object.NewUnknownOperator(nil, fmt.Sprintf("%d", op), string(left.Type()), string(right.Type()), "")
 	}
 	return vm.push(&object.Integer{Value: result})
 }
@@ -341,7 +340,7 @@ func (vm *VM) executeComparison(op code.Opcode) error {
 	case code.OpNotEqual:
 		return vm.push(nativeBoolToBooleanObject(right != left))
 	default:
-		return fmt.Errorf("unknown operator: %d (%s %s)", op, left.Type(), right.Type())
+		return object.NewUnknownOperator(nil, fmt.Sprintf("%d", op), string(left.Type()), string(right.Type()), "")
 	}
 }
 
@@ -359,7 +358,7 @@ func (vm *VM) executeIntegerComparison(
 	case code.OpGreaterThan:
 		return vm.push(nativeBoolToBooleanObject(leftValue > rightValue))
 	default:
-		return fmt.Errorf("unknown operator: %d", op)
+		return object.NewUnknownOperator(nil, fmt.Sprintf("%d", op), string(left.Type()), string(right.Type()), "")
 	}
 }
 
@@ -387,7 +386,7 @@ func (vm *VM) executeBangOperator() error {
 func (vm *VM) executeMinusOperator() error {
 	operand := vm.pop()
 	if operand.Type() != object.INTEGER_OBJ {
-		return fmt.Errorf("unsupported type for negation: %s", operand.Type())
+		return object.NewUnsupportedUnaryOperation(nil, "-", string(operand.Type()))
 	}
 	value := operand.(*object.Integer).Value
 	return vm.push(&object.Integer{Value: -value})
@@ -420,7 +419,7 @@ func (vm *VM) buildHash(startIndex, endIndex int) (object.Object, error) {
 		pair := object.HashPair{Key: key, Value: value}
 		hashKey, ok := key.(object.Hashable)
 		if !ok {
-			return nil, fmt.Errorf("unusable as hash key: %s", key.Type())
+			return nil, object.NewUnusableAsHashKey(nil, string(key.Type()))
 		}
 		hashedPairs[hashKey.HashKey()] = pair
 	}
@@ -434,7 +433,7 @@ func (vm *VM) executeIndexExpression(left, index object.Object) error {
 	case left.Type() == object.HASH_OBJ:
 		return vm.executeHashIndex(left, index)
 	default:
-		return fmt.Errorf("index operator not supported: %s", left.Type())
+		return object.NewIndexOperatorNotSupported(nil, string(left.Type()))
 	}
 }
 
@@ -455,7 +454,7 @@ func (vm *VM) executeHashIndex(hash, index object.Object) error {
 	hashObject := hash.(*object.Hash)
 	key, ok := index.(object.Hashable)
 	if !ok {
-		return fmt.Errorf("unusable as hash key: %s", index.Type())
+		return object.NewUnusableAsHashKey(nil, string(index.Type()))
 	}
 	pair, ok := hashObject.Pairs[key.HashKey()]
 	if !ok {
@@ -472,13 +471,13 @@ func (vm *VM) executeCall(numArgs int) error {
 	case *object.Builtin:
 		return vm.callBuiltin(callee, numArgs)
 	default:
-		return fmt.Errorf("calling non-closure and non-builtin")
+		return object.NewNotCallable(nil, string(callee.Type()))
 	}
 }
 
 func (vm *VM) callClosure(cl *object.Closure, numArgs int) error {
 	if numArgs != cl.Fn.NumParameters {
-		return fmt.Errorf("wrong number of arguments: want=%d, got=%d", cl.Fn.NumParameters, numArgs)
+		return object.NewWrongArgumentCount(nil, cl.Fn.NumParameters, numArgs)
 	}
 
 	frame := NewFrame(cl, vm.sp-numArgs)
@@ -503,7 +502,7 @@ func (vm *VM) pushClosure(constIndex, numFree int) error {
 	constant := vm.constants[constIndex]
 	function, ok := constant.(*object.CompiledFunction)
 	if !ok {
-		return fmt.Errorf("not a function: %+v", constant)
+		return object.NewNotCallable(nil, string(constant.Type()))
 	}
 
 	free := make([]object.Object, numFree)

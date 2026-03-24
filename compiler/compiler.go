@@ -81,7 +81,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.LetStatement:
 		symbol, ok := c.symbolTable.Define(node.Initialization.Name.Value, node.Initialization.Mutable)
 		if !ok {
-			return fmt.Errorf("cannot reinitialize variable: %s", node.Initialization.Name.Value)
+			return object.NewCannotReinitializeVariable(&node.Initialization.Name.Token, node.Initialization.Name.Value)
 		}
 		err := c.Compile(node.Value)
 		if err != nil {
@@ -145,7 +145,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.Identifier:
 		symbol, ok := c.symbolTable.Resolve(node.Value)
 		if !ok {
-			return fmt.Errorf("identifier not found: %s", node.Value)
+			return object.NewUnknownIdentifier(&node.Token, node.Value)
 		}
 		c.getSymbol(symbol)
 	case *ast.AssignmentExpression:
@@ -155,10 +155,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		symbol, ok := c.symbolTable.Resolve(node.Name.Value)
 		if !ok {
-			return fmt.Errorf("identifier not found: %s", node.Name.Value)
+			return object.NewUnknownIdentifier(&node.Name.Token, node.Name.Value)
 		}
 		if !symbol.Mutable {
-			return fmt.Errorf("cannot assign to immutable variable: %s", node.Name.Value)
+			return object.NewCannotAssignImmutableVariable(&node.Name.Token, node.Name.Value)
 		}
 		c.setSymbol(symbol)
 		c.getSymbol(symbol)
@@ -213,7 +213,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		case "-":
 			c.emit(code.OpMinus)
 		default:
-			return fmt.Errorf("unkown operator %s", node.Operator)
+			return object.NewUnknownOperator(&node.Token, node.Operator, "", "", "")
 		}
 	case *ast.InfixExpression:
 		if node.Operator == "<" {
@@ -253,7 +253,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		case "!=":
 			c.emit(code.OpNotEqual)
 		default:
-			return fmt.Errorf("unkown operator %s", node.Operator)
+			return object.NewUnknownOperator(&node.Token, node.Operator, "", "", "")
 		}
 
 	case *ast.Boolean:
@@ -317,7 +317,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		for _, p := range node.Parameters {
 			_, ok := c.symbolTable.Define(p.Name.Value, p.Mutable)
 			if !ok {
-				return fmt.Errorf("cannot reinitialize variable: %s", p.Name.Value)
+				return object.NewCannotReinitializeVariable(&p.Name.Token, p.Name.Value)
 			}
 		}
 

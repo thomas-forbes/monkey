@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"monkey/ast"
 	"monkey/code"
+	"monkey/token"
 	"strings"
 )
 
@@ -74,11 +75,23 @@ func (rv *ReturnValue) Inspect() string    { return "RETURN(" + rv.Value.Inspect
 type Error struct {
 	// TODO: stack trace
 	Message string
+	Detail  error
+	Tok     *token.Token
 }
 
 func (e *Error) controlFlowSignal() {}
 func (e *Error) Type() ObjectType   { return ERROR_OBJ }
-func (e *Error) Inspect() string    { return "ERROR: " + e.Message }
+func (e *Error) Error() string {
+	if e.Message != "" {
+		return e.Message
+	}
+	if e.Detail != nil {
+		return e.Detail.Error()
+	}
+	return ""
+}
+func (e *Error) String() string  { return e.Error() }
+func (e *Error) Inspect() string { return "ERROR: " + e.Error() }
 
 type Break struct {
 	Value Object

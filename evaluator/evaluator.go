@@ -60,7 +60,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if IsError(right) {
 			return right
 		}
-		return evalPrefixExpression(node.Operator, right)
+		return evalPrefixExpression(node, right)
 	case *ast.InfixExpression:
 		left := Eval(node.Left, env)
 		if IsError(left) {
@@ -71,7 +71,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if IsError(right) {
 			return right
 		}
-		return evalInfixExpression(node.Operator, left, right)
+		return evalInfixExpression(node, left, right)
 	case *ast.AssignmentExpression:
 		return evalAssignmentExpression(node, env)
 	case *ast.FunctionLiteral:
@@ -87,7 +87,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if len(args) == 1 && IsError(args[0]) {
 			return args[0]
 		}
-		return applyFunction(function, args)
+		return applyFunction(node, function, args)
 	case *ast.RangeExpression:
 		return evalRangeExpression(node, env)
 	case *ast.BreakStatement:
@@ -133,14 +133,14 @@ func nativeBoolToBooleanObject(input bool) *object.Boolean {
 	return object.FALSE
 }
 
-func evalPrefixExpression(operator string, right object.Object) object.Object {
-	switch operator {
+func evalPrefixExpression(node *ast.PrefixExpression, right object.Object) object.Object {
+	switch node.Operator {
 	case "!":
 		return evalBangOperatorExpression(right)
 	case "-":
-		return evalMinusPrefixOperatorExpression(right)
+		return evalMinusPrefixOperatorExpression(node, right)
 	default:
-		return newError("unknown operator: %s%s", operator, right.Type())
+		return object.NewUnknownOperator(&node.Token, node.Operator, "", "", string(right.Type()))
 	}
 }
 
@@ -157,41 +157,35 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 	}
 }
 
-func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
+func evalMinusPrefixOperatorExpression(node *ast.PrefixExpression, right object.Object) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
-		return newError("unsupported type for negation: %s", right.Type())
+		return object.NewUnsupportedUnaryOperation(&node.Token, node.Operator, string(right.Type()))
 	}
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
 }
 
-func evalInfixExpression(
-	operator string,
-	left, right object.Object,
-) object.Object {
+func evalInfixExpression(node *ast.InfixExpression, left, right object.Object) object.Object {
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
-		return evalIntegerInfixExpression(operator, left, right)
+		return evalIntegerInfixExpression(node, left, right)
 	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
-		return evalStringInfixExpression(operator, left, right)
-	case operator == "==":
+		return evalStringInfixExpression(node, left, right)
+	case node.Operator == "==":
 		return nativeBoolToBooleanObject(left == right)
-	case operator == "!=":
+	case node.Operator == "!=":
 		return nativeBoolToBooleanObject(left != right)
 	case left.Type() != right.Type():
-		return newError("unsupported types for binary operation: %s %s", left.Type(), right.Type())
+		return object.NewUnsupportedBinaryOperation(&node.Token, string(left.Type()), string(right.Type()))
 	default:
-		return newError("unsupported types for binary operation: %s %s", left.Type(), right.Type())
+		return object.NewUnsupportedBinaryOperation(&node.Token, string(left.Type()), string(right.Type()))
 	}
 }
 
-func evalIntegerInfixExpression(
-	operator string,
-	left, right object.Object,
-) object.Object {
+func evalIntegerInfixExpression(node *ast.InfixExpression, left, right object.Object) object.Object {
 	leftVal := left.(*object.Integer).Value
 	rightVal := right.(*object.Integer).Value
-	switch operator {
+	switch node.Operator {
 	case "+":
 		return &object.Integer{Value: leftVal + rightVal}
 	case "-":
@@ -209,16 +203,13 @@ func evalIntegerInfixExpression(
 	case "!=":
 		return nativeBoolToBooleanObject(leftVal != rightVal)
 	default:
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+		return object.NewUnknownOperator(&node.Token, node.Operator, string(left.Type()), string(right.Type()), "")
 	}
 }
 
-func evalStringInfixExpression(
-	operator string,
-	left, right object.Object,
-) object.Object {
-	if operator != "+" {
-		return newError("unknown operator: %s %s", left.Type(), right.Type())
+func evalStringInfixExpression(node *ast.InfixExpression, left, right object.Object) object.Object {
+	if node.Operator != "+" {
+		return object.NewUnknownOperator(&node.Token, node.Operator, string(left.Type()), string(right.Type()), "")
 	}
 	leftVal := left.(*object.String).Value
 	rightVal := right.(*object.String).Value
@@ -255,10 +246,6 @@ func isTruthy(obj object.Object) bool {
 	}
 }
 
-func newError(format string, a ...interface{}) *object.Error {
-	return &object.Error{Message: fmt.Sprintf(format, a...)}
-}
-
 func IsError(obj object.Object) bool {
 	if obj != nil {
 		return obj.Type() == object.ERROR_OBJ
@@ -276,7 +263,7 @@ func evalIdentifier(
 	if builtin, ok := builtins[node.Value]; ok {
 		return builtin
 	}
-	return newError("identifier not found: " + node.Value)
+	return object.NewUnknownIdentifier(&node.Token, node.Value)
 }
 
 func evalExpressions(
@@ -294,10 +281,10 @@ func evalExpressions(
 	return result
 }
 
-func applyFunction(fn object.Object, args []object.Object) object.Object {
+func applyFunction(node *ast.CallExpression, fn object.Object, args []object.Object) object.Object {
 	switch fn := fn.(type) {
 	case *object.Function:
-		extendedEnv, err := extendFunctionEnv(fn, args)
+		extendedEnv, err := extendFunctionEnv(node, fn, args)
 		if err != nil {
 			return err
 		}
@@ -306,22 +293,23 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	case *object.Builtin:
 		return fn.Fn(args...)
 	default:
-		return newError("not a function: %s", fn.Type())
+		return object.NewNotCallable(&node.Token, string(fn.Type()))
 	}
 }
 
 func extendFunctionEnv(
+	node *ast.CallExpression,
 	fn *object.Function,
 	args []object.Object,
 ) (*object.Environment, *object.Error) {
 	env := object.NewEnclosedEnvironment(fn.Env)
 	if len(args) != len(fn.Parameters) {
-		return nil, &object.Error{Message: fmt.Sprintf("wrong number of arguments: want=%d, got=%d", len(fn.Parameters), len(args))}
+		return nil, object.NewWrongArgumentCount(&node.Token, len(fn.Parameters), len(args))
 	}
 	for paramIdx, param := range fn.Parameters {
 		_, ok := env.Set(param.Name.Value, args[paramIdx], param.Mutable, true)
 		if !ok {
-			return nil, &object.Error{Message: fmt.Sprintf("cannot reinitialize variable: %s", param.Name.Value)}
+			return nil, object.NewCannotReinitializeVariable(&param.Name.Token, param.Name.Value)
 		}
 	}
 	return env, nil
@@ -341,7 +329,7 @@ func evalIndexExpression(left, index object.Object) object.Object {
 	case left.Type() == object.HASH_OBJ:
 		return evalHashIndexExpression(left, index)
 	default:
-		return newError("index operator not supported: %s", left.Type())
+		return object.NewIndexOperatorNotSupported(nil, string(left.Type()))
 	}
 }
 
@@ -370,7 +358,7 @@ func evalHashLiteral(
 		}
 		hashKey, ok := key.(object.Hashable)
 		if !ok {
-			return newError("unusable as hash key: %s", key.Type())
+			return object.NewUnusableAsHashKey(&node.Token, string(key.Type()))
 		}
 		value := Eval(valueNode, env)
 		if IsError(value) {
@@ -386,7 +374,7 @@ func evalHashIndexExpression(hash, index object.Object) object.Object {
 	hashObject := hash.(*object.Hash)
 	key, ok := index.(object.Hashable)
 	if !ok {
-		return newError("unusable as hash key: %s", index.Type())
+		return object.NewUnusableAsHashKey(nil, string(index.Type()))
 	}
 	pair, ok := hashObject.Pairs[key.HashKey()]
 	if !ok {
@@ -402,7 +390,7 @@ func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Ob
 	}
 	name := node.Initialization.Name.Value
 	if entity, ok := env.Get(name); ok && entity != object.NULL_ENTITY {
-		return newError("cannot reinitialize variable: %s", name)
+		return object.NewCannotReinitializeVariable(&node.Initialization.Name.Token, name)
 	}
 	env.Set(name, val, node.Initialization.Mutable, true)
 	return object.NULL
@@ -416,10 +404,10 @@ func evalAssignmentExpression(node *ast.AssignmentExpression, env *object.Enviro
 	name := node.Name.Value
 	entity, ok := env.Get(name)
 	if !ok {
-		return newError("identifier not found: %s", name)
+		return object.NewUnknownIdentifier(&node.Name.Token, name)
 	}
 	if !entity.Mutable {
-		return newError("cannot assign to immutable variable: %s", name)
+		return object.NewCannotAssignImmutableVariable(&node.Name.Token, name)
 	}
 	env.Set(name, val, entity.Mutable, false)
 	return val
@@ -432,7 +420,7 @@ func evalForStatement(node *ast.ForStatement, env *object.Environment) object.Ob
 	case *ast.ForConditionalClause:
 		return evalForConditionalStatement(node, node.Clause.(*ast.ForConditionalClause), env)
 	default:
-		return newError("unknown for control clause: %T", node.Clause)
+		return object.NewExpectedType(&node.Token, "for control clause", "for-in or conditional clause", fmt.Sprintf("%T", node.Clause))
 	}
 }
 
@@ -493,7 +481,7 @@ func evalForInStatement(node *ast.ForStatement, clause *ast.ForInClause, env *ob
 		}
 	case *object.Range:
 		if valueName != nil {
-			return newError("cannot assign value in for-in loop without array range")
+			return object.NewExpectedType(&node.Token, "for-in loop value binding", "ARRAY or HASH iterable", "RANGE")
 		}
 
 		var increment int64 = 1
@@ -539,7 +527,7 @@ func evalRangeExpression(node *ast.RangeExpression, env *object.Environment) obj
 	}
 	leftInt, ok := left.(*object.Integer)
 	if !ok {
-		return newError("left side of range expression must be an integer, got %s", left.Type())
+		return object.NewExpectedType(&node.Token, "left side of range expression", "INTEGER", string(left.Type()))
 	}
 	right := Eval(node.Right, env)
 	if IsError(right) {
@@ -547,7 +535,7 @@ func evalRangeExpression(node *ast.RangeExpression, env *object.Environment) obj
 	}
 	rightInt, ok := right.(*object.Integer)
 	if !ok {
-		return newError("right side of range expression must be an integer, got %s", right.Type())
+		return object.NewExpectedType(&node.Token, "right side of range expression", "INTEGER", string(right.Type()))
 	}
 	return &object.Range{Right: rightInt.Value, Left: leftInt.Value}
 }

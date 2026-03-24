@@ -70,6 +70,9 @@ func RunProgram(engine Engine, input string, env *object.Environment) (object.Ob
 		evalResult, err := runEvaluator(program, env)
 		duration = time.Since(start)
 		if err != nil {
+			if objectErr, ok := err.(*object.Error); ok {
+				return objectErr, env, duration
+			}
 			return &object.Error{Message: err.Error()}, env, duration
 		}
 		result = evalResult
@@ -77,6 +80,9 @@ func RunProgram(engine Engine, input string, env *object.Environment) (object.Ob
 		comp := compiler.New()
 		err := comp.Compile(program)
 		if err != nil {
+			if objectErr, ok := err.(*object.Error); ok {
+				return objectErr, env, 0
+			}
 			return &object.Error{Message: err.Error()}, env, 0
 		}
 		// fmt.Println(comp.Bytecode().Instructions)
@@ -86,6 +92,9 @@ func RunProgram(engine Engine, input string, env *object.Environment) (object.Ob
 		err = runVM(machine)
 		duration = time.Since(start)
 		if err != nil {
+			if objectErr, ok := err.(*object.Error); ok {
+				return objectErr, env, duration
+			}
 			return &object.Error{Message: err.Error()}, env, duration
 		}
 

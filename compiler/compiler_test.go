@@ -282,6 +282,64 @@ func TestBooleanExpressions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestCompilerReturnsStructuredErrors(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		detailType interface{}
+	}{
+		{
+			name:       "unknown identifier",
+			input:      "foobar",
+			detailType: object.UnknownIdentifier{},
+		},
+		{
+			name:       "cannot reinitialize variable",
+			input:      "let a = 1; let a = 2;",
+			detailType: object.CannotReinitializeVariable{},
+		},
+		{
+			name:       "cannot assign immutable variable",
+			input:      "let a = 1; a = 2;",
+			detailType: object.CannotAssignImmutableVariable{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			program := parse(tt.input)
+			compiler := New()
+
+			err := compiler.Compile(program)
+			if err == nil {
+				t.Fatal("expected compiler error")
+			}
+
+			objectErr, ok := err.(*object.Error)
+			if !ok {
+				t.Fatalf("expected *object.Error, got %T", err)
+			}
+
+			switch tt.detailType.(type) {
+			case object.UnknownIdentifier:
+				if _, ok := objectErr.Detail.(object.UnknownIdentifier); !ok {
+					t.Fatalf("expected UnknownIdentifier detail, got %T", objectErr.Detail)
+				}
+			case object.CannotReinitializeVariable:
+				if _, ok := objectErr.Detail.(object.CannotReinitializeVariable); !ok {
+					t.Fatalf("expected CannotReinitializeVariable detail, got %T", objectErr.Detail)
+				}
+			case object.CannotAssignImmutableVariable:
+				if _, ok := objectErr.Detail.(object.CannotAssignImmutableVariable); !ok {
+					t.Fatalf("expected CannotAssignImmutableVariable detail, got %T", objectErr.Detail)
+				}
+			default:
+				t.Fatalf("unhandled detail type %T", tt.detailType)
+			}
+		})
+	}
+}
+
 func TestConditionals(t *testing.T) {
 	tests := []compilerTestCase{
 		{

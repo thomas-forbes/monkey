@@ -21,10 +21,10 @@ func main() {
 		fmt.Printf("Error: %s\n", err)
 		return
 	}
-	if len(os.Args) == 1 {
+	if flag.Arg(0) == "" {
 		startRepl(engine, os.Stdin, os.Stdout)
 	} else if len(os.Args) > 1 {
-		startFile(engine, os.Args[len(os.Args)-1], os.Stdout)
+		startFile(engine, flag.Arg(0), os.Stdout)
 	} else {
 		fmt.Println("Usage: monkey file.monkey")
 	}
