@@ -32,7 +32,7 @@ func main() {
 
 func startRepl(engine runner.Engine, in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := runner.NewEnvironment(engine)
+	session := runner.NewSession(engine)
 	fmt.Fprintf(out, "Running Monkey REPL with %s engine\n", engine)
 
 	for {
@@ -41,8 +41,8 @@ func startRepl(engine runner.Engine, in io.Reader, out io.Writer) {
 			return
 		}
 
-		result, nextEnv, _ := runner.RunProgram(engine, scanner.Text(), env)
-		env = nextEnv
+		result, nSession, _ := runner.RunProgram(engine, scanner.Text(), session)
+		session = nSession
 
 		if result != nil {
 			io.WriteString(out, result.Inspect())
@@ -52,14 +52,14 @@ func startRepl(engine runner.Engine, in io.Reader, out io.Writer) {
 }
 
 func startFile(engine runner.Engine, fileName string, out io.Writer) {
-	env := runner.NewEnvironment(engine)
 	data, err := os.ReadFile(fileName)
 	if err != nil {
 		fmt.Fprintf(out, "Couldn't read file: %s\n", err)
 		return
 	}
 
-	result, _, duration := runner.RunProgram(engine, string(data), env)
+	session := runner.NewSession(engine)
+	result, _, duration := runner.RunProgram(engine, string(data), session)
 	if result == nil {
 		result = object.NULL
 	}

@@ -61,7 +61,7 @@ func (c *Compiler) Bytecode() *Bytecode {
 	}
 }
 
-func (c *Compiler) Compile(node ast.Node) error {
+func (c *Compiler) Compile(node ast.Node) *object.Error {
 	switch node := node.(type) {
 	case *ast.Program:
 		for _, s := range node.Statements {
@@ -361,7 +361,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpCall, len(node.Arguments))
 	default:
-		return fmt.Errorf("unkown node type %T", node)
+		return object.NewUnknownNode(nil, &node)
 	}
 	return nil
 }

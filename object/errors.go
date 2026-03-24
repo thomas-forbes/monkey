@@ -2,7 +2,10 @@ package object
 
 import (
 	"fmt"
+	"monkey/ast"
+	"monkey/parser"
 	"monkey/token"
+	"strings"
 )
 
 type UnknownIdentifier struct {
@@ -234,4 +237,36 @@ func NewError(tok *token.Token, detail error) *Error {
 		err.Message = detail.Error()
 	}
 	return err
+}
+
+type UnknownNode struct {
+	Node *ast.Node
+}
+
+func (e UnknownNode) Error() string {
+	return fmt.Sprintf("unknown node: %T", *e.Node)
+}
+
+func (e UnknownNode) String() string { return e.Error() }
+
+func NewUnknownNode(tok *token.Token, node *ast.Node) *Error {
+	return NewError(tok, UnknownNode{Node: node})
+}
+
+type ParserErrors struct {
+	Errors []parser.ParserError
+}
+
+func (e ParserErrors) Error() string {
+	messages := make([]string, 0, len(e.Errors))
+	for _, err := range e.Errors {
+		messages = append(messages, err.Error())
+	}
+	return fmt.Sprintf("parser errors:\n%s", strings.Join(messages, "\n"))
+}
+
+func (e ParserErrors) String() string { return e.Error() }
+
+func NewParserErrors(tok *token.Token, errors []parser.ParserError) *Error {
+	return NewError(tok, ParserErrors{Errors: errors})
 }

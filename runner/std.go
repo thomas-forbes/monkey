@@ -1,4 +1,0 @@
-package runner
-
-const stdlib = `
-`

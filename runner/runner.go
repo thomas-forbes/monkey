@@ -9,7 +9,6 @@ import (
 	"monkey/object"
 	"monkey/parser"
 	"monkey/vm"
-	"strings"
 	"time"
 )
 
@@ -31,34 +30,13 @@ func ParseEngine(raw string) (Engine, error) {
 	}
 }
 
-func NewEnvironment(engine Engine) *object.Environment {
-	env := object.NewEnvironment()
-	if strings.TrimSpace(stdlib) == "" {
-		return env
-	}
-
-	result, loadedEnv, _ := RunProgram(engine, stdlib, env)
-	if result.Type() == object.ERROR_OBJ {
-		panic(fmt.Errorf("error loading stdlib: %s", result.Inspect()))
-	}
-
-	return loadedEnv
-}
-
-func RunProgram(engine Engine, input string, env *object.Environment) (object.Object, *object.Environment, time.Duration) {
-	if env == nil {
-		env = object.NewEnvironment()
-	}
-
+func RunProgram(engine Engine, input string, session Session) (object.Object, Session, time.Duration) {
 	l := lexer.New(input)
 	p := parser.New(l)
 	program := p.ParseProgram()
+
 	if len(p.Errors()) != 0 {
-		messages := make([]string, 0, len(p.Errors()))
-		for _, err := range p.Errors() {
-			messages = append(messages, err.Error())
-		}
-		return &object.Error{Message: "\n" + strings.Join(messages, "\n")}, env, 0
+		return object.NewParserErrors(nil, p.Errors()), session, 0
 	}
 
 	var result object.Object
@@ -66,66 +44,45 @@ func RunProgram(engine Engine, input string, env *object.Environment) (object.Ob
 
 	switch engine {
 	case INTERPRETER:
-		start := time.Now()
-		evalResult, err := runEvaluator(program, env)
-		duration = time.Since(start)
-		if err != nil {
-			if objectErr, ok := err.(*object.Error); ok {
-				return objectErr, env, duration
-			}
-			return &object.Error{Message: err.Error()}, env, duration
-		}
-		result = evalResult
+		result, session, duration = runEval(program, session)
 	case VM:
-		comp := compiler.New()
-		err := comp.Compile(program)
-		if err != nil {
-			if objectErr, ok := err.(*object.Error); ok {
-				return objectErr, env, 0
-			}
-			return &object.Error{Message: err.Error()}, env, 0
-		}
-		// fmt.Println(comp.Bytecode().Instructions)
-		machine := vm.New(comp.Bytecode())
-
-		start := time.Now()
-		err = runVM(machine)
-		duration = time.Since(start)
-		if err != nil {
-			if objectErr, ok := err.(*object.Error); ok {
-				return objectErr, env, duration
-			}
-			return &object.Error{Message: err.Error()}, env, duration
-		}
-
-		result = machine.LastPoppedStackElem()
+		result, session, duration = runVM(program, session)
 	default:
-		return &object.Error{Message: fmt.Sprintf("unknown engine: %s", engine)}, env, 0
+		return &object.Error{Message: fmt.Sprintf("unknown engine: %s", engine)}, session, 0
 	}
 
 	if result == nil {
-		return object.NULL, env, duration
+		return object.NULL, session, duration
 	}
 
-	return result, env, duration
+	return result, session, duration
 }
 
-func runVM(machine *vm.VM) (err error) {
-	defer func() {
-		if recovered := recover(); recovered != nil {
-			err = fmt.Errorf("%v", recovered)
-		}
-	}()
+func runEval(program *ast.Program, session Session) (object.Object, Session, time.Duration) {
+	env := session.(*EvalSession).env
 
-	return machine.Run()
+	start := time.Now()
+	result := evaluator.Eval(program, env)
+	duration := time.Since(start)
+	return result, session, duration
 }
 
-func runEvaluator(program *ast.Program, env *object.Environment) (result object.Object, err error) {
-	defer func() {
-		if recovered := recover(); recovered != nil {
-			err = fmt.Errorf("%v", recovered)
-		}
-	}()
+func runVM(program *ast.Program, session Session) (object.Object, Session, time.Duration) {
+	comp := compiler.New()
 
-	return evaluator.Eval(program, env), nil
+	if err := comp.Compile(program); err != nil {
+		return err, session, 0
+	}
+
+	machine := vm.New(comp.Bytecode())
+
+	start := time.Now()
+	err := machine.Run()
+	duration := time.Since(start)
+	if err != nil {
+		return object.NewError(nil, err), session, 0
+	}
+
+	result := machine.LastPoppedStackElem()
+	return result, session, duration
 }

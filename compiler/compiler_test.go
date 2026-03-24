@@ -111,12 +111,11 @@ func runCompilerTests(t *testing.T, tests []compilerTestCase) {
 		t.Logf("test: %d", i)
 		program := parse(tt.input)
 		compiler := New()
-		err := compiler.Compile(program)
-		if err != nil {
+		if err := compiler.Compile(program); err != nil {
 			t.Fatalf("compiler error: %s", err)
 		}
 		bytecode := compiler.Bytecode()
-		err = testInstructions(tt.expectedInstructions, bytecode.Instructions)
+		err := testInstructions(tt.expectedInstructions, bytecode.Instructions)
 		if err != nil {
 			t.Fatalf("testInstructions failed: %s", err)
 		}
@@ -310,14 +309,9 @@ func TestCompilerReturnsStructuredErrors(t *testing.T) {
 			program := parse(tt.input)
 			compiler := New()
 
-			err := compiler.Compile(program)
-			if err == nil {
+			objectErr := compiler.Compile(program)
+			if objectErr == nil {
 				t.Fatal("expected compiler error")
-			}
-
-			objectErr, ok := err.(*object.Error)
-			if !ok {
-				t.Fatalf("expected *object.Error, got %T", err)
 			}
 
 			switch tt.detailType.(type) {
