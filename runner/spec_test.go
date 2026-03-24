@@ -84,6 +84,7 @@ func TestSpec(t *testing.T) {
 				{name: "let expression value", input: "let a = 5 * 5; a;", expected: 25},
 				{name: "let chain", input: "let a = 5; let b = a; let c = a + b + 5; c;", expected: 15},
 				{name: "mutable assignment", input: "let mut a = 5; a = 3; a;", expected: 3},
+				{name: "assignment returns new value", input: "let mut a = 5; a = 3;", expected: 3},
 				{name: "assignment preserves prior binding", input: "let mut a = 5; let b = a; a = 3; b;", expected: 5},
 				{name: "underscore discard", input: "let _ = 5; _;", expected: nil},
 				{name: "mutable function parameters", input: "let mut sum = fn(mut a, mut b) { a = a + 1; b = b + 1; a + b }; sum(1, 2);", expected: 5},
@@ -228,7 +229,7 @@ addOne(4);`, expected: 5},
 		{
 			name: "loops",
 			cases: []specCase{
-				{name: "conditional for", input: `let mut i = 0; for i < 5 { i = i + 1; } i;`, expected: 5},
+				{name: "conditional for iterate", input: `let mut i = 0; for i < 5 { i = i + 1; } i;`, expected: 5},
 				{name: "conditional for continue", input: `let mut i = 0; let mut sum = 0; for i < 5 { i = i + 1; if (i == 3) { continue; } sum = sum + i; } sum;`, expected: 12},
 				{name: "conditional for break", input: `let mut i = 0; let mut sum = 0; for true { if (i == 3) { break; } sum = sum + i; i = i + 1; } sum;`, expected: 3},
 				{name: "conditional for return", input: `let mut i = 0; for i < 5 { if (i == 2) { return i; } i = i + 1; }`, expected: 2},

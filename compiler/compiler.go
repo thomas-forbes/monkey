@@ -340,6 +340,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("cannot assign to immutable variable: %s", node.Name.Value)
 		}
 		c.setSymbol(symbol)
+		c.getSymbol(symbol)
 	default:
 		return fmt.Errorf("unkown node type %T", node)
 	}
