@@ -610,6 +610,8 @@ func TestFunctionParameterParsing(t *testing.T) {
 		{input: "fn() {};", expectedParams: []string{}},
 		{input: "fn(x) {};", expectedParams: []string{"x"}},
 		{input: "fn(x, y, z) {};", expectedParams: []string{"x", "y", "z"}},
+		{input: "fn(mut x) {};", expectedParams: []string{"x"}},
+		{input: "fn(mut x, y, mut z) {};", expectedParams: []string{"x", "y", "z"}},
 	}
 	for _, tt := range tests {
 		l := lexer.New(tt.input)

@@ -86,7 +86,7 @@ func TestSpec(t *testing.T) {
 				{name: "mutable assignment", input: "let mut a = 5; a = 3; a;", expected: 3},
 				{name: "assignment preserves prior binding", input: "let mut a = 5; let b = a; a = 3; b;", expected: 5},
 				{name: "underscore discard", input: "let _ = 5; _;", expected: nil},
-				{name: "mutable function parameters", input: "let mut sum = fn(mut a, mut b) { a = a + 1; b = b + 1; a + b }; sum(1, 2);", expected: 8},
+				{name: "mutable function parameters", input: "let mut sum = fn(mut a, mut b) { a = a + 1; b = b + 1; a + b }; sum(1, 2);", expected: 5},
 				{name: "immutable function parameters", input: "let mut sum = fn(a, b) { a = a + 1; b = b + 1; a + b }; sum(1, 2);", expected: errorObject("cannot assign to immutable variable: a")},
 			},
 		},

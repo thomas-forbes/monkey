@@ -81,7 +81,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !ok {
 			return fmt.Errorf("undefined variable %s", node.Value)
 		}
-		c.loadSymbol(symbol)
+		c.getSymbol(symbol)
 	case *ast.LetStatement:
 		symbol := c.symbolTable.Define(node.Initialization.Name.Value, node.Initialization.Mutable)
 		err := c.Compile(node.Value)
@@ -89,7 +89,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
-		c.emit(code.OpSetLocal, symbol.Index)
+		c.setSymbol(symbol)
 	case *ast.IfExpression:
 		branchEndJumpPos := make([]int, len(node.Branches))
 		hasElse := false
@@ -266,7 +266,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		instructions := c.leaveScope()
 
 		for _, s := range freeSymbols {
-			c.loadSymbol(s)
+			c.getSymbol(s)
 		}
 
 		compiledFn := &object.CompiledFunction{
@@ -333,7 +333,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 		if !symbol.Mutable {
 			return fmt.Errorf("cannot assign to immutable variable: %s", node.Name.Value)
 		}
-		c.loadSymbol(symbol)
+		c.setSymbol(symbol)
 	default:
 		return fmt.Errorf("unkown node type %T", node)
 	}
@@ -421,7 +421,11 @@ func (c *Compiler) leaveScope() code.Instructions {
 	return instructions
 }
 
-func (c *Compiler) loadSymbol(s Symbol) {
+func (c *Compiler) getSymbol(s Symbol) {
+	if s.Name == object.NULL_NAME {
+		c.emit(code.OpNull)
+		return
+	}
 	switch s.Scope {
 	case LocalScope:
 		c.emit(code.OpGetLocal, s.Index)
@@ -431,5 +435,18 @@ func (c *Compiler) loadSymbol(s Symbol) {
 		c.emit(code.OpGetBuiltin, s.Index)
 	case FunctionScope:
 		c.emit(code.OpCurrentClosure)
+	}
+}
+
+func (c *Compiler) setSymbol(s Symbol) {
+	switch s.Scope {
+	case LocalScope:
+		c.emit(code.OpSetLocal, s.Index)
+	case FreeScope:
+		c.emit(code.OpSetFree, s.Index)
+	case BuiltinScope:
+		panic("cannot assign to builtin symbol")
+	case FunctionScope:
+		panic("cannot assign to function name")
 	}
 }

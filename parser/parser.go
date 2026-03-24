@@ -435,6 +435,7 @@ func (p *Parser) parseInitializationList(end token.TokenType) []*ast.Initializat
 		init := &ast.Initialization{Mutable: false}
 		if p.curTokenIs(token.MUT) {
 			init.Mutable = true
+			p.nextToken()
 		}
 		init.Name = &ast.Identifier{Token: p.curToken(), Value: p.curToken().Literal}
 		inits = append(inits, init)
