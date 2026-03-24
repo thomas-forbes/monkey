@@ -4,6 +4,22 @@ A programming language built following the books [Writing An Interpreter In Go](
 
 ## Usage
 
+Running:
+```bash
+# Run the REPL
+go run main.go
+# Run a Monkey source file
+go run main.go path/to/source.monkey
+```
+
+Testing:
+```bash
+# All tests
+go test ./...
+# Specific test
+go test ./runner -run TestSpec/errors
+```
+
 ## Syntax
 
 ### Variables

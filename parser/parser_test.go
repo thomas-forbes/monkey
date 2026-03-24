@@ -297,6 +297,60 @@ func TestAssignmentExpression(t *testing.T) {
 	}
 }
 
+func TestCommentsAreIgnoredByParser(t *testing.T) {
+	input := `// before program
+let x = 5; // after let
+// between statements
+x + 10;
+if (true) {
+	// inside consequence
+	x
+} else {
+	// inside alternative
+	10
+}`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	if len(program.Statements) != 3 {
+		t.Fatalf("program.Statements does not contain 3 statements. got=%d", len(program.Statements))
+	}
+
+	if !testLetStatement(t, program.Statements[0], "x") {
+		return
+	}
+
+	stmt, ok := program.Statements[1].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[1] is not ast.ExpressionStatement. got=%T", program.Statements[1])
+	}
+	if !testInfixExpression(t, stmt.Expression, "x", "+", 10) {
+		return
+	}
+
+	ifStmt, ok := program.Statements[2].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("program.Statements[2] is not ast.ExpressionStatement. got=%T", program.Statements[2])
+	}
+	ifExp, ok := ifStmt.Expression.(*ast.IfExpression)
+	if !ok {
+		t.Fatalf("program.Statements[2].Expression is not ast.IfExpression. got=%T", ifStmt.Expression)
+	}
+
+	if len(ifExp.Branches) != 2 {
+		t.Fatalf("if expression does not contain 2 branches. got=%d", len(ifExp.Branches))
+	}
+	if got := ifExp.Branches[0].Body.String(); got != "x" {
+		t.Fatalf("consequence body wrong. got=%q", got)
+	}
+	if got := ifExp.Branches[1].Body.String(); got != "10" {
+		t.Fatalf("alternative body wrong. got=%q", got)
+	}
+}
+
 func TestOperatorPrecedenceParsing(t *testing.T) {
 	tests := []struct {
 		input    string

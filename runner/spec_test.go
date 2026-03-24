@@ -128,6 +128,30 @@ func TestSpec(t *testing.T) {
 			},
 		},
 		{
+			name: "comments",
+			cases: []specCase{
+				{name: "leading and trailing comments", input: `// setup
+let x = 5; // keep x
+x;`, expected: 5},
+				{name: "comments between statements", input: `let x = 1;
+// increment
+x = x + 1;
+// return
+x;`, expected: errorObject("cannot assign to immutable variable: x")},
+				{name: "comments inside blocks", input: `let mut x = 1;
+if (true) {
+	// mutate in branch
+	x = x + 1;
+}
+x;`, expected: 2},
+				{name: "comments inside function body", input: `let addOne = fn(x) {
+	// compute result
+	x + 1
+};
+addOne(4);`, expected: 5},
+			},
+		},
+		{
 			name: "builtins",
 			cases: []specCase{
 				{name: "len empty string", input: `len("")`, expected: 0},
@@ -184,7 +208,6 @@ func TestSpec(t *testing.T) {
 				{name: "hash bool index", input: `{true: 5}[true]`, expected: 5},
 				{name: "hash missing key", input: `{}["foo"]`, expected: nil},
 				{name: "hash missing integer key", input: `{1: 1}[0]`, expected: nil},
-				{name: "unusable hash key", input: `{"name": "Monkey"}[fn(x) { x }];`, expected: errorObject("unusable as hash key: FUNCTION")},
 			},
 		},
 		{

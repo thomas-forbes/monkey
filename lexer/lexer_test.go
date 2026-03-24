@@ -139,3 +139,38 @@ if (5 < 10) {
 		}
 	}
 }
+
+func TestNextTokenSkipsComments(t *testing.T) {
+	input := `// leading comment
+let x = 5; // trailing comment
+x / 5;
+// final comment`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{token.LET, "let"},
+		{token.IDENT, "x"},
+		{token.ASSIGN, "="},
+		{token.INT, "5"},
+		{token.SEMICOLON, ";"},
+		{token.IDENT, "x"},
+		{token.SLASH, "/"},
+		{token.INT, "5"},
+		{token.SEMICOLON, ";"},
+		{token.EOF, ""},
+	}
+
+	l := New(input)
+
+	for i, tt := range tests {
+		tok := l.NextToken()
+		if tok.Type != tt.expectedType {
+			t.Fatalf("test %d: expected type to be %s, got %s", i, tt.expectedType, tok.Type)
+		}
+		if tok.Literal != tt.expectedLiteral {
+			t.Fatalf("test %d: expected literal to be %s, got %s", i, tt.expectedLiteral, tok.Literal)
+		}
+	}
+}
