@@ -2,6 +2,20 @@
 
 A programming language built following the books [Writing An Interpreter In Go](https://interpreterbook.com/) and it's sequel [Writing A Compiler In Go](https://compilerbook.com/). The language is a simple and dynamically typed language with a syntax similar to JavaScript.
 
+## Example
+
+```monkey
+let fib = fn(n) {
+  if (n < 2) {
+    n;
+  } else {
+    fib(n - 1) + fib(n - 2);
+  }
+};
+
+puts(fib(10)); // 55
+```
+
 ## Usage
 
 Running:
