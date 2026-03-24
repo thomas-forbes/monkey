@@ -1,25 +1,68 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"io"
+	"monkey/object"
 	"monkey/runner"
 	"os"
 )
 
+const prompt = ">> "
+
 func main() {
+	engineFlag := flag.String("engine", "vm", "use 'vm' or 'eval'")
 	flag.Parse()
 
-	engine, err := runner.GetEngine()
+	engine, err := runner.ParseEngine(*engineFlag)
 	if err != nil {
 		fmt.Printf("Error: %s\n", err)
 		return
 	}
 	if len(os.Args) == 1 {
-		runner.StartRepl(engine, os.Stdin, os.Stdout)
+		startRepl(engine, os.Stdin, os.Stdout)
 	} else if len(os.Args) > 1 {
-		runner.StartFile(engine, os.Args[len(os.Args)-1])
+		startFile(engine, os.Args[len(os.Args)-1], os.Stdout)
 	} else {
 		fmt.Println("Usage: monkey file.monkey")
 	}
+}
+
+func startRepl(engine runner.Engine, in io.Reader, out io.Writer) {
+	scanner := bufio.NewScanner(in)
+	env := runner.NewEnvironment(engine)
+	fmt.Fprintf(out, "Running Monkey REPL with %s engine\n", engine)
+
+	for {
+		fmt.Fprintf(out, prompt)
+		if !scanner.Scan() {
+			return
+		}
+
+		result, nextEnv, _ := runner.RunProgram(engine, scanner.Text(), env)
+		env = nextEnv
+
+		if result != nil {
+			io.WriteString(out, result.Inspect())
+			io.WriteString(out, "\n")
+		}
+	}
+}
+
+func startFile(engine runner.Engine, fileName string, out io.Writer) {
+	env := runner.NewEnvironment(engine)
+	data, err := os.ReadFile(fileName)
+	if err != nil {
+		fmt.Fprintf(out, "Couldn't read file: %s\n", err)
+		return
+	}
+
+	result, _, duration := runner.RunProgram(engine, string(data), env)
+	if result == nil {
+		result = object.NULL
+	}
+
+	fmt.Fprintf(out, "engine=%s, result=%s, duration=%s\n", engine, result.Inspect(), duration)
 }
