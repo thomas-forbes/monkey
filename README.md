@@ -3,7 +3,8 @@
 A programming language built following the books [Writing An Interpreter In Go](https://interpreterbook.com/) and it's sequel [Writing A Compiler In Go](https://compilerbook.com/). The language is a simple and dynamically typed language with a syntax similar to JavaScript. I have personally extended it with additional features such as:
 - [variable mutability controls](#variables)
 - [loops](#loops)
-- [range operator](#loops) `0..5`
+- [range operator](#loops) (`0..5`)
+- [improved internal error handling and reporting](#usage)
 
 ## Example
 
@@ -128,3 +129,5 @@ for condition {
   puts("This will run until the condition is false");
 }
 ```
+
+## Errors

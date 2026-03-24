@@ -41,7 +41,7 @@ type Parser struct {
 	tokens []token.Token
 	pos    int
 
-	errors []string
+	errors []ParserError
 
 	prefixParseFns map[token.TokenType]prefixParseFn
 	infixParseFns  map[token.TokenType]infixParseFn
@@ -55,7 +55,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p := &Parser{
 		tokens: tokens,
-		errors: []string{},
+		errors: []ParserError{},
 	}
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
@@ -89,13 +89,15 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
-func (p *Parser) Errors() []string {
+func (p *Parser) Errors() []ParserError {
 	return p.errors
 }
 
 func (p *Parser) peekError(t token.TokenType) {
-	msg := fmt.Sprintf("expected next token to be %s, got %s instead", t, p.peekToken().Type)
-	p.errors = append(p.errors, msg)
+	p.errors = append(p.errors, ExpectedTokenError{
+		Expected: t,
+		Got:      p.peekToken(),
+	})
 }
 
 func (p *Parser) curPrecedence() int {
@@ -235,8 +237,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 }
 
 func (p *Parser) noPrefixParseFnError(t token.TokenType) {
-	msg := fmt.Sprintf("no prefix parse function for %s found", t)
-	p.errors = append(p.errors, msg)
+	p.errors = append(p.errors, NoPrefixParseFnError{Got: p.curToken()})
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
@@ -266,9 +267,10 @@ func (p *Parser) expectCurTokenIs(t token.TokenType) bool {
 	if p.curTokenIs(t) {
 		return true
 	} else {
-		msg := fmt.Sprintf("expected next token to be %s, got %s instead",
-			t, p.peekToken().Type)
-		p.errors = append(p.errors, msg)
+		p.errors = append(p.errors, ExpectedTokenError{
+			Expected: t,
+			Got:      p.curToken(),
+		})
 		return false
 	}
 }
@@ -304,8 +306,10 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	lit := &ast.IntegerLiteral{Token: p.curToken()}
 	value, err := strconv.ParseInt(p.curToken().Literal, 0, 64)
 	if err != nil {
-		msg := fmt.Sprintf("could not parse %q as integer", p.curToken().Literal)
-		p.errors = append(p.errors, msg)
+		p.errors = append(p.errors, InvalidIntegerLiteralError{
+			Tok:     p.curToken(),
+			Literal: p.curToken().Literal,
+		})
 		return nil
 	}
 	lit.Value = value
@@ -337,8 +341,10 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 func (p *Parser) parseAssignExpression(left ast.Expression) ast.Expression {
 	ident, ok := left.(*ast.Identifier)
 	if !ok {
-		msg := fmt.Sprintf("expected left-hand side of assignment to be identifier, got %T", left)
-		p.errors = append(p.errors, msg)
+		p.errors = append(p.errors, InvalidAssignmentTargetError{
+			Tok:        p.curToken(),
+			TargetType: fmt.Sprintf("%T", left),
+		})
 		return nil
 	}
 	expression := &ast.AssignmentExpression{
@@ -532,8 +538,10 @@ func (p *Parser) parseForStatement() *ast.ForStatement {
 
 	clause := &ast.ForInClause{}
 	if len(bindings) != 1 && len(bindings) != 2 {
-		msg := fmt.Sprintf("expected 1 or 2 bindings in for statement, got %d", len(bindings))
-		p.errors = append(p.errors, msg)
+		p.errors = append(p.errors, InvalidForBindingCountError{
+			Tok:   p.curToken(),
+			Count: len(bindings),
+		})
 		return nil
 	} else if len(bindings) == 2 {
 		clause.Value = bindings[1].Name

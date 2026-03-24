@@ -54,7 +54,11 @@ func RunProgram(engine Engine, input string, env *object.Environment) (object.Ob
 	p := parser.New(l)
 	program := p.ParseProgram()
 	if len(p.Errors()) != 0 {
-		return &object.Error{Message: strings.Join(p.Errors(), "\n")}, env, 0
+		messages := make([]string, 0, len(p.Errors()))
+		for _, err := range p.Errors() {
+			messages = append(messages, err.Error())
+		}
+		return &object.Error{Message: "\n" + strings.Join(messages, "\n")}, env, 0
 	}
 
 	var result object.Object

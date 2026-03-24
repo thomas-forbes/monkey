@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"monkey/ast"
 	"monkey/lexer"
+	"monkey/token"
 	"testing"
 )
 
@@ -69,10 +70,105 @@ func checkParserErrors(t *testing.T, p *Parser) {
 		return
 	}
 	t.Errorf("parser has %d errors", len(errors))
-	for _, msg := range errors {
-		t.Errorf("parser error: %q", msg)
+	for _, err := range errors {
+		t.Errorf("parser error: %q", err.Error())
 	}
 	t.FailNow()
+}
+
+func TestExpectedTokenErrorIncludesPosition(t *testing.T) {
+	l := lexer.New("let x 5;")
+	p := New(l)
+
+	p.ParseProgram()
+
+	errors := p.Errors()
+	if len(errors) != 1 {
+		t.Fatalf("expected 1 parser error, got %d", len(errors))
+	}
+
+	expectedErr, ok := errors[0].(ExpectedTokenError)
+	if !ok {
+		t.Fatalf("expected ExpectedTokenError, got %T", errors[0])
+	}
+	if expectedErr.Expected != token.ASSIGN {
+		t.Fatalf("wrong expected token. got=%s want=%s", expectedErr.Expected, token.ASSIGN)
+	}
+	if expectedErr.Got.Type != token.INT {
+		t.Fatalf("wrong got token. got=%s want=%s", expectedErr.Got.Type, token.INT)
+	}
+	if expectedErr.Got.Line != 1 || expectedErr.Got.Column != 7 {
+		t.Fatalf("wrong token position. got=%d:%d want=1:7", expectedErr.Got.Line, expectedErr.Got.Column)
+	}
+}
+
+func TestNoPrefixParseFnErrorIncludesPosition(t *testing.T) {
+	l := lexer.New("@")
+	p := New(l)
+
+	p.ParseProgram()
+
+	errors := p.Errors()
+	if len(errors) != 1 {
+		t.Fatalf("expected 1 parser error, got %d", len(errors))
+	}
+
+	prefixErr, ok := errors[0].(NoPrefixParseFnError)
+	if !ok {
+		t.Fatalf("expected NoPrefixParseFnError, got %T", errors[0])
+	}
+	if prefixErr.Got.Type != token.ILLEGAL {
+		t.Fatalf("wrong token type. got=%s want=%s", prefixErr.Got.Type, token.ILLEGAL)
+	}
+	if prefixErr.Got.Line != 1 || prefixErr.Got.Column != 1 {
+		t.Fatalf("wrong token position. got=%d:%d want=1:1", prefixErr.Got.Line, prefixErr.Got.Column)
+	}
+}
+
+func TestInvalidAssignmentTargetError(t *testing.T) {
+	l := lexer.New("5 = 3;")
+	p := New(l)
+
+	p.ParseProgram()
+
+	errors := p.Errors()
+	if len(errors) != 1 {
+		t.Fatalf("expected 1 parser error, got %d", len(errors))
+	}
+
+	assignErr, ok := errors[0].(InvalidAssignmentTargetError)
+	if !ok {
+		t.Fatalf("expected InvalidAssignmentTargetError, got %T", errors[0])
+	}
+	if assignErr.TargetType != "*ast.IntegerLiteral" {
+		t.Fatalf("wrong target type. got=%s", assignErr.TargetType)
+	}
+	if assignErr.Tok.Type != token.ASSIGN {
+		t.Fatalf("wrong token type. got=%s want=%s", assignErr.Tok.Type, token.ASSIGN)
+	}
+}
+
+func TestInvalidForBindingCountError(t *testing.T) {
+	l := lexer.New("for a, b, c in xs {}")
+	p := New(l)
+
+	p.ParseProgram()
+
+	errors := p.Errors()
+	if len(errors) != 1 {
+		t.Fatalf("expected 1 parser error, got %d", len(errors))
+	}
+
+	forErr, ok := errors[0].(InvalidForBindingCountError)
+	if !ok {
+		t.Fatalf("expected InvalidForBindingCountError, got %T", errors[0])
+	}
+	if forErr.Count != 3 {
+		t.Fatalf("wrong binding count. got=%d want=3", forErr.Count)
+	}
+	if forErr.Tok.Type != token.IN {
+		t.Fatalf("wrong token type. got=%s want=%s", forErr.Tok.Type, token.IN)
+	}
 }
 
 func TestReturnStatements(t *testing.T) {

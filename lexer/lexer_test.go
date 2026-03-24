@@ -174,3 +174,48 @@ x / 5;
 		}
 	}
 }
+
+func TestTokenPositions(t *testing.T) {
+	input := "let x = 10;\nfoo == \"bar\"\n0..2"
+
+	tests := []struct {
+		expectedType   token.TokenType
+		expectedLine   int
+		expectedColumn int
+		expectedOffset int
+	}{
+		{token.LET, 1, 1, 0},
+		{token.IDENT, 1, 5, 4},
+		{token.ASSIGN, 1, 7, 6},
+		{token.INT, 1, 9, 8},
+		{token.SEMICOLON, 1, 11, 10},
+		{token.IDENT, 2, 1, 12},
+		{token.EQUALS, 2, 5, 16},
+		{token.STRING, 2, 8, 19},
+		{token.INT, 3, 1, 25},
+		{token.ITERATE, 3, 2, 26},
+		{token.INT, 3, 4, 28},
+		{token.EOF, 3, 5, 29},
+	}
+
+	l := New(input)
+
+	for i, tt := range tests {
+		tok := l.NextToken()
+		if tok.Type != tt.expectedType {
+			t.Fatalf("test %d: expected type to be %s, got %s", i, tt.expectedType, tok.Type)
+		}
+		if tok.Line != tt.expectedLine || tok.Column != tt.expectedColumn || tok.Offset != tt.expectedOffset {
+			t.Fatalf(
+				"test %d: wrong token position. got=%d:%d@%d want=%d:%d@%d",
+				i,
+				tok.Line,
+				tok.Column,
+				tok.Offset,
+				tt.expectedLine,
+				tt.expectedColumn,
+				tt.expectedOffset,
+			)
+		}
+	}
+}
