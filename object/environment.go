@@ -41,7 +41,7 @@ func (e *Environment) Set(name string, val Object, mutable bool, initialize bool
 		return NULL_ENTITY, true
 	}
 
-	if _, ok := e.store[name]; ok || initialize {
+	if _, ok := e.store[name]; ok != initialize {
 		entity := Entity{Object: val, Mutable: mutable}
 		e.store[name] = entity
 		return &entity, true

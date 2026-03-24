@@ -190,15 +190,16 @@ func TestSpec(t *testing.T) {
 		{
 			name: "errors",
 			cases: []specCase{
-				{name: "type mismatch", input: "5 + true;", expected: errorObject("type mismatch: INTEGER + BOOLEAN")},
-				{name: "type mismatch after statement", input: "5 + true; 5;", expected: errorObject("type mismatch: INTEGER + BOOLEAN")},
-				{name: "minus boolean", input: "-true", expected: errorObject("unknown operator: -BOOLEAN")},
-				{name: "boolean arithmetic", input: "true + false;", expected: errorObject("unknown operator: BOOLEAN + BOOLEAN")},
-				{name: "nested boolean arithmetic", input: "if (10 > 1) { true + false; }", expected: errorObject("unknown operator: BOOLEAN + BOOLEAN")},
+				{name: "type mismatch", input: "5 + true;", expected: errorObject("unsupported types for binary operation: INTEGER BOOLEAN")},
+				{name: "type mismatch after statement", input: "5 + true; 5;", expected: errorObject("unsupported types for binary operation: INTEGER BOOLEAN")},
+				{name: "minus boolean", input: "-true", expected: errorObject("unsupported type for negation: BOOLEAN")},
+				{name: "boolean arithmetic", input: "true + false;", expected: errorObject("unsupported types for binary operation: BOOLEAN BOOLEAN")},
+				{name: "nested boolean arithmetic", input: "if (10 > 1) { true + false; }", expected: errorObject("unsupported types for binary operation: BOOLEAN BOOLEAN")},
 				{name: "unknown identifier", input: "foobar", expected: errorObject("identifier not found: foobar")},
-				{name: "unknown string operator", input: `"Hello" - "World"`, expected: errorObject("unknown operator: STRING - STRING")},
+				{name: "unknown string operator", input: `"Hello" - "World"`, expected: errorObject("unknown operator: STRING STRING")},
 				{name: "reinitialize variable", input: `let a = 5; let a = 3;`, expected: errorObject("cannot reinitialize variable: a")},
-				{name: "reassign immutable variable", input: `let a = 5; a = 3;`, expected: errorObject("cannot reassign unmutable variable: a")},
+				{name: "reinitialize function paramater", input: `fn(a, a) {}(1, 1);`, expected: errorObject("cannot reinitialize variable: a")},
+				{name: "reassign immutable variable", input: `let a = 5; a = 3;`, expected: errorObject("cannot assign to immutable variable: a")},
 			},
 		},
 		{

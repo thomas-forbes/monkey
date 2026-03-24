@@ -12,29 +12,47 @@ func TestDefine(t *testing.T) {
 		"f": {Name: "f", Scope: LocalScope, Index: 1},
 	}
 	global := NewSymbolTable()
-	a := global.Define("a", false)
+	a, ok := global.Define("a", false)
+	if !ok {
+		t.Fatalf("expected define(a) to succeed")
+	}
 	if a != expected["a"] {
 		t.Errorf("expected a=%+v, got=%+v", expected["a"], a)
 	}
-	b := global.Define("b", true)
+	b, ok := global.Define("b", true)
+	if !ok {
+		t.Fatalf("expected define(b) to succeed")
+	}
 	if b != expected["b"] {
 		t.Errorf("expected b=%+v, got=%+v", expected["b"], b)
 	}
 	firstLocal := NewEnclosedSymbolTable(global)
-	c := firstLocal.Define("c", false)
+	c, ok := firstLocal.Define("c", false)
+	if !ok {
+		t.Fatalf("expected define(c) to succeed")
+	}
 	if c != expected["c"] {
 		t.Errorf("expected c=%+v, got=%+v", expected["c"], c)
 	}
-	d := firstLocal.Define("d", false)
+	d, ok := firstLocal.Define("d", false)
+	if !ok {
+		t.Fatalf("expected define(d) to succeed")
+	}
 	if d != expected["d"] {
 		t.Errorf("expected d=%+v, got=%+v", expected["d"], d)
 	}
 	secondLocal := NewEnclosedSymbolTable(firstLocal)
-	e := secondLocal.Define("e", false)
+	e, ok := secondLocal.Define("e", false)
+	if !ok {
+		t.Fatalf("expected define(e) to succeed")
+	}
 	if e != expected["e"] {
 		t.Errorf("expected e=%+v, got=%+v", expected["e"], e)
 	}
-	f := secondLocal.Define("f", false)
+	f, ok := secondLocal.Define("f", false)
+	if !ok {
+		t.Fatalf("expected define(f) to succeed")
+	}
 	if f != expected["f"] {
 		t.Errorf("expected f=%+v, got=%+v", expected["f"], f)
 	}
@@ -203,9 +221,12 @@ func TestDefineAndResolveFunctionName(t *testing.T) {
 func TestShadowingFunctionName(t *testing.T) {
 	global := NewSymbolTable()
 	global.DefineFunctionName("a")
-	global.Define("a", false)
+	_, ok := global.Define("a", false)
+	if ok {
+		t.Fatalf("expected define(a) to fail when function name already exists")
+	}
 
-	expected := Symbol{Name: "a", Scope: LocalScope, Index: 0}
+	expected := Symbol{Name: "a", Scope: FunctionScope, Index: 0}
 
 	result, ok := global.Resolve(expected.Name)
 	if !ok {

@@ -36,11 +36,14 @@ func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
 	return s
 }
 
-func (s *SymbolTable) Define(name string, mutable bool) Symbol {
+func (s *SymbolTable) Define(name string, mutable bool) (Symbol, bool) {
 	symbol := Symbol{Name: name, Scope: LocalScope, Index: s.numDefinitions, Mutable: mutable}
+	if _, ok := s.store[name]; ok {
+		return symbol, false
+	}
 	s.store[name] = symbol
 	s.numDefinitions++
-	return symbol
+	return symbol, true
 }
 
 func (s *SymbolTable) Resolve(name string) (Symbol, bool) {

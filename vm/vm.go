@@ -300,7 +300,7 @@ func (vm *VM) executeBinaryStringOperation(
 	left, right object.Object,
 ) error {
 	if op != code.OpAdd {
-		return fmt.Errorf("unknown string operator: %d", op)
+		return fmt.Errorf("unknown operator: STRING STRING")
 	}
 	leftValue := left.(*object.String).Value
 	rightValue := right.(*object.String).Value

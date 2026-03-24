@@ -159,7 +159,7 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 
 func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
-		return newError("unknown operator: -%s", right.Type())
+		return newError("unsupported type for negation: %s", right.Type())
 	}
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
@@ -179,9 +179,9 @@ func evalInfixExpression(
 	case operator == "!=":
 		return nativeBoolToBooleanObject(left != right)
 	case left.Type() != right.Type():
-		return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
+		return newError("unsupported types for binary operation: %s %s", left.Type(), right.Type())
 	default:
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+		return newError("unsupported types for binary operation: %s %s", left.Type(), right.Type())
 	}
 }
 
@@ -218,7 +218,7 @@ func evalStringInfixExpression(
 	left, right object.Object,
 ) object.Object {
 	if operator != "+" {
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+		return newError("unknown operator: %s %s", left.Type(), right.Type())
 	}
 	leftVal := left.(*object.String).Value
 	rightVal := right.(*object.String).Value
@@ -297,7 +297,10 @@ func evalExpressions(
 func applyFunction(fn object.Object, args []object.Object) object.Object {
 	switch fn := fn.(type) {
 	case *object.Function:
-		extendedEnv := extendFunctionEnv(fn, args)
+		extendedEnv, err := extendFunctionEnv(fn, args)
+		if err != nil {
+			return err
+		}
 		evaluated := Eval(fn.Body, extendedEnv)
 		return unwrapReturnValue(evaluated)
 	case *object.Builtin:
@@ -310,12 +313,18 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 func extendFunctionEnv(
 	fn *object.Function,
 	args []object.Object,
-) *object.Environment {
+) (*object.Environment, *object.Error) {
 	env := object.NewEnclosedEnvironment(fn.Env)
-	for paramIdx, param := range fn.Parameters {
-		env.Set(param.Name.Value, args[paramIdx], param.Mutable, true)
+	if len(args) != len(fn.Parameters) {
+		return nil, &object.Error{Message: fmt.Sprintf("wrong number of arguments: want=%d, got=%d", len(fn.Parameters), len(args))}
 	}
-	return env
+	for paramIdx, param := range fn.Parameters {
+		_, ok := env.Set(param.Name.Value, args[paramIdx], param.Mutable, true)
+		if !ok {
+			return nil, &object.Error{Message: fmt.Sprintf("cannot reinitialize variable: %s", param.Name.Value)}
+		}
+	}
+	return env, nil
 }
 
 func unwrapReturnValue(obj object.Object) object.Object {
@@ -407,7 +416,7 @@ func evalAssignmentExpression(node *ast.AssignmentExpression, env *object.Enviro
 	name := node.Name.Value
 	entity, ok := env.Get(name)
 	if !ok {
-		return newError("undefined variable: %s", name)
+		return newError("identifier not found: %s", name)
 	}
 	if !entity.Mutable {
 		return newError("cannot assign to immutable variable: %s", name)
