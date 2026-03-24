@@ -1,5 +1,7 @@
 package compiler
 
+import "monkey/object"
+
 type SymbolScope string
 
 const (
@@ -24,14 +26,22 @@ type SymbolTable struct {
 	numDefinitions int
 }
 
-func NewSymbolTable() *SymbolTable {
+func newSymbolTable() *SymbolTable {
 	s := make(map[string]Symbol)
 	free := []Symbol{}
 	return &SymbolTable{store: s, FreeSymbols: free, numDefinitions: 0}
 }
 
+func NewMasterSymbolTable() *SymbolTable {
+	symbolTable := newSymbolTable()
+	for i, v := range object.Builtins {
+		symbolTable.DefineBuiltin(i, v.Name)
+	}
+	return symbolTable
+}
+
 func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
-	s := NewSymbolTable()
+	s := newSymbolTable()
 	s.Outer = outer
 	return s
 }

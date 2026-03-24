@@ -41,8 +41,7 @@ func startRepl(engine runner.Engine, in io.Reader, out io.Writer) {
 			return
 		}
 
-		result, nSession, _ := runner.RunProgram(engine, scanner.Text(), session)
-		session = nSession
+		result, _ := runner.RunProgram(engine, scanner.Text(), session)
 
 		if result != nil {
 			io.WriteString(out, result.Inspect())
@@ -59,7 +58,7 @@ func startFile(engine runner.Engine, fileName string, out io.Writer) {
 	}
 
 	session := runner.NewSession(engine)
-	result, _, duration := runner.RunProgram(engine, string(data), session)
+	result, duration := runner.RunProgram(engine, string(data), session)
 	if result == nil {
 		result = object.NULL
 	}

@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"monkey/compiler"
 	"monkey/object"
 )
 
@@ -13,7 +14,11 @@ func NewSession(engine Engine) Session {
 	case INTERPRETER:
 		return &EvalSession{env: object.NewEnvironment()}
 	case VM:
-		return &VMSession{}
+		return &VMSession{
+			symbolTable: compiler.NewMasterSymbolTable(),
+			constants:   &[]object.Object{},
+			// globals:     &[]object.Object{},
+		}
 	default:
 		panic("unknown engine: " + string(engine))
 	}
@@ -26,8 +31,8 @@ type EvalSession struct {
 func (s *EvalSession) session() {}
 
 type VMSession struct {
-	// symbolTable *compiler.SymbolTable
-	// constants   *[]object.Object
+	symbolTable *compiler.SymbolTable
+	constants   *[]object.Object
 	// globals     *[]object.Object
 }
 

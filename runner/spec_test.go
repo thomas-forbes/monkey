@@ -258,7 +258,7 @@ addOne(4);`, expected: 5},
 			for _, tt := range group.cases {
 				for _, engine := range engines {
 					t.Run(fmt.Sprintf("%s/%s", engine, tt.name), func(t *testing.T) {
-						result, _, _ := RunProgram(engine, tt.input, NewSession(engine))
+						result, _ := RunProgram(engine, tt.input, NewSession(engine))
 						assertExpectedObject(t, tt.expected, result)
 					})
 				}

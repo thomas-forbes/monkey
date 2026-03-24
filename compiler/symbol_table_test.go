@@ -11,7 +11,7 @@ func TestDefine(t *testing.T) {
 		"e": {Name: "e", Scope: LocalScope, Index: 0},
 		"f": {Name: "f", Scope: LocalScope, Index: 1},
 	}
-	global := NewSymbolTable()
+	global := NewMasterSymbolTable()
 	a, ok := global.Define("a", false)
 	if !ok {
 		t.Fatalf("expected define(a) to succeed")
@@ -58,7 +58,7 @@ func TestDefine(t *testing.T) {
 	}
 }
 func TestResolveGlobal(t *testing.T) {
-	global := NewSymbolTable()
+	global := NewMasterSymbolTable()
 	global.Define("a", false)
 	global.Define("b", false)
 	expected := []Symbol{
@@ -79,7 +79,7 @@ func TestResolveGlobal(t *testing.T) {
 }
 
 func TestResolve(t *testing.T) {
-	global := NewSymbolTable()
+	global := NewMasterSymbolTable()
 	global.Define("a", false)
 	global.Define("b", false)
 
@@ -129,7 +129,7 @@ func TestResolve(t *testing.T) {
 }
 
 func TestResolveFreeSymbols(t *testing.T) {
-	global := NewSymbolTable()
+	global := NewMasterSymbolTable()
 	global.Define("a", false)
 	global.Define("b", false)
 
@@ -172,7 +172,7 @@ func TestResolveFreeSymbols(t *testing.T) {
 }
 
 func TestDefineResolveBuiltins(t *testing.T) {
-	global := NewSymbolTable()
+	global := NewMasterSymbolTable()
 	firstLocal := NewEnclosedSymbolTable(global)
 	secondLocal := NewEnclosedSymbolTable(firstLocal)
 
@@ -202,7 +202,7 @@ func TestDefineResolveBuiltins(t *testing.T) {
 }
 
 func TestDefineAndResolveFunctionName(t *testing.T) {
-	global := NewSymbolTable()
+	global := NewMasterSymbolTable()
 	global.DefineFunctionName("a")
 
 	expected := Symbol{Name: "a", Scope: FunctionScope, Index: 0}
@@ -219,7 +219,7 @@ func TestDefineAndResolveFunctionName(t *testing.T) {
 }
 
 func TestShadowingFunctionName(t *testing.T) {
-	global := NewSymbolTable()
+	global := NewMasterSymbolTable()
 	global.DefineFunctionName("a")
 	_, ok := global.Define("a", false)
 	if ok {

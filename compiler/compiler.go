@@ -28,20 +28,19 @@ type Compiler struct {
 }
 
 func New() *Compiler {
+	return NewWithState(NewMasterSymbolTable(), []object.Object{})
+}
+
+func NewWithState(symbolTable *SymbolTable, constants []object.Object) *Compiler {
 	mainScope := CompilationScope{
 		instructions:        code.Instructions{},
 		lastInstruction:     EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
 	}
 
-	symbolTable := NewSymbolTable()
-	for i, v := range object.Builtins {
-		symbolTable.DefineBuiltin(i, v.Name)
-	}
-
 	return &Compiler{
 		symbolTable: symbolTable,
-		constants:   []object.Object{},
+		constants:   constants,
 		scopes:      []CompilationScope{mainScope},
 		scopeIndex:  0,
 	}
