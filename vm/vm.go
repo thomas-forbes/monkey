@@ -184,14 +184,17 @@ func (vm *VM) Run() error {
 		case code.OpReturnValue:
 			returnValue := vm.pop()
 
-			frame := vm.popFrame()
-			vm.pop()
+			if vm.framesIndex != 1 {
+				frame := vm.popFrame()
+				vm.pop()
 
-			vm.sp = frame.bp - 1
-
-			err := vm.push(returnValue)
-			if err != nil {
-				return err
+				vm.sp = frame.bp - 1
+				err := vm.push(returnValue)
+				if err != nil {
+					return err
+				}
+			} else {
+				vm.currentFrame().ip = len(vm.currentFrame().Instructions())
 			}
 		case code.OpClosure:
 			constIndex := code.ReadUint16(ins[ip+1:])
@@ -268,7 +271,7 @@ func (vm *VM) push(o object.Object) error {
 }
 
 func (vm *VM) pop() object.Object {
-	if vm.sp <= 0 {
+	if vm.sp < 1 {
 		panic("🚀 stack underflow 💥")
 	}
 	o := vm.stack[vm.sp-1]

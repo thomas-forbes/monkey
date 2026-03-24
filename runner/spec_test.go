@@ -229,9 +229,7 @@ func TestSpec(t *testing.T) {
 	for _, group := range groups {
 		t.Run(group.name, func(t *testing.T) {
 			for _, tt := range group.cases {
-				tt := tt
 				for _, engine := range engines {
-					engine := engine
 					t.Run(fmt.Sprintf("%s/%s", engine, tt.name), func(t *testing.T) {
 						result, _, _ := RunProgram(engine, tt.input, NewEnvironment(engine))
 						assertExpectedObject(t, tt.expected, result)
