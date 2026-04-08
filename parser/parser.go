@@ -379,15 +379,8 @@ func (p *Parser) parseIfExpression() ast.Expression {
 		}
 
 		if p.curTokenIs(token.IF) {
-			if !p.expectPeek(token.LPAREN) {
-				return nil
-			}
-
+			p.nextToken()
 			branch.Condition = p.parseExpression(LOWEST)
-
-			if !p.expectCurTokenIs(token.RPAREN) {
-				return nil
-			}
 		}
 
 		if !p.expectPeek(token.LBRACE) {

@@ -57,13 +57,13 @@ func TestSpec(t *testing.T) {
 		{
 			name: "conditionals",
 			cases: []specCase{
-				{name: "if true branch", input: "if (true) { 10 }", expected: 10},
+				{name: "if true branch", input: "if true { 10 }", expected: 10},
 				{name: "if else true branch", input: "if (true) { 10 } else { 20 }", expected: 10},
 				{name: "if else false branch", input: "if (false) { 10 } else { 20 }", expected: 20},
-				{name: "if integer truthy", input: "if (1) { 10 }", expected: 10},
+				{name: "if integer truthy", input: "if 1 { 10 }", expected: 10},
 				{name: "if null branch", input: "if (false) { 10 }", expected: nil},
 				{name: "else if branch", input: "if (1 > 2) { 10 } else if (1 < 2) { 20 } else { 30 }", expected: 20},
-				{name: "final else branch", input: "if (1 > 2) { 10 } else if (1 > 2) { 20 } else { 30 }", expected: 30},
+				{name: "final else branch", input: "if 1 > 2 { 10 } else if (1 > 2) { 20 } else { 30 }", expected: 30},
 				{name: "nested if falsey", input: "if ((if (false) { 10 })) { 10 } else { 20 }", expected: 20},
 			},
 		},
@@ -132,24 +132,24 @@ func TestSpec(t *testing.T) {
 			name: "comments",
 			cases: []specCase{
 				{name: "leading and trailing comments", input: `// setup
-let x = 5; // keep x
-x;`, expected: 5},
+				let x = 5; // keep x
+				x;`, expected: 5},
 				{name: "comments between statements", input: `let x = 1;
-// increment
-x = x + 1;
-// return
-x;`, expected: errorObject(object.CannotAssignImmutableVariable{Name: "x"})},
+				// increment
+				x = x + 1;
+				// return
+				x;`, expected: errorObject(object.CannotAssignImmutableVariable{Name: "x"})},
 				{name: "comments inside blocks", input: `let mut x = 1;
-if (true) {
-	// mutate in branch
-	x = x + 1;
-}
-x;`, expected: 2},
+				if (true) {
+					// mutate in branch
+					x = x + 1;
+				}
+				x;`, expected: 2},
 				{name: "comments inside function body", input: `let addOne = fn(x) {
-	// compute result
-	x + 1
-};
-addOne(4);`, expected: 5},
+					// compute result
+					x + 1
+				};
+				addOne(4);`, expected: 5},
 			},
 		},
 		{
@@ -245,7 +245,7 @@ addOne(4);`, expected: 5},
 		{
 			name: "recursion",
 			cases: []specCase{
-				{name: "recursive function", input: `let countDown = fn(x) { if (x == 0) { return 0; } else { countDown(x - 1); } }; countDown(1);`, expected: 0},
+				{name: "recursive function", input: `let countDown = fn(x) { if x == 0 { return 0; } else { countDown(x - 1); } }; countDown(1);`, expected: 0},
 				{name: "recursive function in wrapper", input: `let countDown = fn(x) { if (x == 0) { return 0; } else { countDown(x - 1); } }; let wrapper = fn() { countDown(1); }; wrapper();`, expected: 0},
 				{name: "recursive fibonacci", input: `let fibonacci = fn(x) { if (x == 0) { return 0; } else { if (x == 1) { return 1; } else { fibonacci(x - 1) + fibonacci(x - 2); } } }; fibonacci(15);`, expected: 610},
 			},
