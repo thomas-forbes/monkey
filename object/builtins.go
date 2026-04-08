@@ -28,8 +28,9 @@ var Builtins = []struct {
 		"puts",
 		&Builtin{Fn: func(args ...Object) Object {
 			for _, arg := range args {
-				fmt.Println(arg.Inspect())
+				fmt.Print(arg.Inspect(), " ")
 			}
+			fmt.Println()
 			return NULL
 		},
 		},
