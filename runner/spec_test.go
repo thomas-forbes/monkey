@@ -17,6 +17,96 @@ type specGroup struct {
 	cases []specCase
 }
 
+func errorObject(detail error) *object.Error {
+	return object.NewError(nil, detail)
+}
+
+func assertExpectedObject(t *testing.T, expected interface{}, actual object.Object) {
+	t.Helper()
+
+	if expected == nil {
+		if actual != object.NULL {
+			t.Fatalf("object is not NULL. got=%T (%+v)", actual, actual)
+		}
+		return
+	}
+
+	switch expected := expected.(type) {
+	case int:
+		integer, ok := actual.(*object.Integer)
+		if !ok {
+			t.Fatalf("object is not Integer. got=%T (%+v)", actual, actual)
+		}
+		if integer.Value != int64(expected) {
+			t.Fatalf("integer has wrong value. got=%d, want=%d", integer.Value, expected)
+		}
+	case bool:
+		boolean, ok := actual.(*object.Boolean)
+		if !ok {
+			t.Fatalf("object is not Boolean. got=%T (%+v)", actual, actual)
+		}
+		if boolean.Value != expected {
+			t.Fatalf("boolean has wrong value. got=%t, want=%t", boolean.Value, expected)
+		}
+	case string:
+		str, ok := actual.(*object.String)
+		if !ok {
+			t.Fatalf("object is not String. got=%T (%+v)", actual, actual)
+		}
+		if str.Value != expected {
+			t.Fatalf("string has wrong value. got=%q, want=%q", str.Value, expected)
+		}
+	case []int:
+		array, ok := actual.(*object.Array)
+		if !ok {
+			t.Fatalf("object is not Array. got=%T (%+v)", actual, actual)
+		}
+		if len(array.Elements) != len(expected) {
+			t.Fatalf("array has wrong num of elements. got=%d, want=%d", len(array.Elements), len(expected))
+		}
+		for i, expectedElem := range expected {
+			integer, ok := array.Elements[i].(*object.Integer)
+			if !ok {
+				t.Fatalf("array element %d is not Integer. got=%T (%+v)", i, array.Elements[i], array.Elements[i])
+			}
+			if integer.Value != int64(expectedElem) {
+				t.Fatalf("array element %d has wrong value. got=%d, want=%d", i, integer.Value, expectedElem)
+			}
+		}
+	case map[object.HashKey]int64:
+		hash, ok := actual.(*object.Hash)
+		if !ok {
+			t.Fatalf("object is not Hash. got=%T (%+v)", actual, actual)
+		}
+		if len(hash.Pairs) != len(expected) {
+			t.Fatalf("hash has wrong number of pairs. got=%d, want=%d", len(hash.Pairs), len(expected))
+		}
+		for expectedKey, expectedValue := range expected {
+			pair, ok := hash.Pairs[expectedKey]
+			if !ok {
+				t.Fatalf("missing hash pair for key %+v", expectedKey)
+			}
+			integer, ok := pair.Value.(*object.Integer)
+			if !ok {
+				t.Fatalf("hash value is not Integer. got=%T (%+v)", pair.Value, pair.Value)
+			}
+			if integer.Value != expectedValue {
+				t.Fatalf("hash value has wrong value. got=%d, want=%d", integer.Value, expectedValue)
+			}
+		}
+	case *object.Error:
+		errObj, ok := actual.(*object.Error)
+		if !ok {
+			t.Fatalf("object is not Error. got=%T (%+v)", actual, actual)
+		}
+		if errObj.Error() != expected.Error() {
+			t.Fatalf("error has wrong message. got=%q, want=%q", errObj.Error(), expected.Error())
+		}
+	default:
+		t.Fatalf("unhandled expected type %T", expected)
+	}
+}
+
 func TestSpec(t *testing.T) {
 	groups := []specGroup{
 		{
@@ -308,95 +398,5 @@ func TestSpec(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func errorObject(detail error) *object.Error {
-	return object.NewError(nil, detail)
-}
-
-func assertExpectedObject(t *testing.T, expected interface{}, actual object.Object) {
-	t.Helper()
-
-	if expected == nil {
-		if actual != object.NULL {
-			t.Fatalf("object is not NULL. got=%T (%+v)", actual, actual)
-		}
-		return
-	}
-
-	switch expected := expected.(type) {
-	case int:
-		integer, ok := actual.(*object.Integer)
-		if !ok {
-			t.Fatalf("object is not Integer. got=%T (%+v)", actual, actual)
-		}
-		if integer.Value != int64(expected) {
-			t.Fatalf("integer has wrong value. got=%d, want=%d", integer.Value, expected)
-		}
-	case bool:
-		boolean, ok := actual.(*object.Boolean)
-		if !ok {
-			t.Fatalf("object is not Boolean. got=%T (%+v)", actual, actual)
-		}
-		if boolean.Value != expected {
-			t.Fatalf("boolean has wrong value. got=%t, want=%t", boolean.Value, expected)
-		}
-	case string:
-		str, ok := actual.(*object.String)
-		if !ok {
-			t.Fatalf("object is not String. got=%T (%+v)", actual, actual)
-		}
-		if str.Value != expected {
-			t.Fatalf("string has wrong value. got=%q, want=%q", str.Value, expected)
-		}
-	case []int:
-		array, ok := actual.(*object.Array)
-		if !ok {
-			t.Fatalf("object is not Array. got=%T (%+v)", actual, actual)
-		}
-		if len(array.Elements) != len(expected) {
-			t.Fatalf("array has wrong num of elements. got=%d, want=%d", len(array.Elements), len(expected))
-		}
-		for i, expectedElem := range expected {
-			integer, ok := array.Elements[i].(*object.Integer)
-			if !ok {
-				t.Fatalf("array element %d is not Integer. got=%T (%+v)", i, array.Elements[i], array.Elements[i])
-			}
-			if integer.Value != int64(expectedElem) {
-				t.Fatalf("array element %d has wrong value. got=%d, want=%d", i, integer.Value, expectedElem)
-			}
-		}
-	case map[object.HashKey]int64:
-		hash, ok := actual.(*object.Hash)
-		if !ok {
-			t.Fatalf("object is not Hash. got=%T (%+v)", actual, actual)
-		}
-		if len(hash.Pairs) != len(expected) {
-			t.Fatalf("hash has wrong number of pairs. got=%d, want=%d", len(hash.Pairs), len(expected))
-		}
-		for expectedKey, expectedValue := range expected {
-			pair, ok := hash.Pairs[expectedKey]
-			if !ok {
-				t.Fatalf("missing hash pair for key %+v", expectedKey)
-			}
-			integer, ok := pair.Value.(*object.Integer)
-			if !ok {
-				t.Fatalf("hash value is not Integer. got=%T (%+v)", pair.Value, pair.Value)
-			}
-			if integer.Value != expectedValue {
-				t.Fatalf("hash value has wrong value. got=%d, want=%d", integer.Value, expectedValue)
-			}
-		}
-	case *object.Error:
-		errObj, ok := actual.(*object.Error)
-		if !ok {
-			t.Fatalf("object is not Error. got=%T (%+v)", actual, actual)
-		}
-		if errObj.Error() != expected.Error() {
-			t.Fatalf("error has wrong message. got=%q, want=%q", errObj.Error(), expected.Error())
-		}
-	default:
-		t.Fatalf("unhandled expected type %T", expected)
 	}
 }
