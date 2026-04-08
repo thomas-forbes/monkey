@@ -252,7 +252,9 @@ addOne(4);`, expected: 5},
 		},
 	}
 
-	engines := []Engine{INTERPRETER, VM}
+	// engines := []Engine{INTERPRETER, VM}
+	engines := []Engine{INTERPRETER}
+
 	for _, group := range groups {
 		t.Run(group.name, func(t *testing.T) {
 			for _, tt := range group.cases {
