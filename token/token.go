@@ -20,6 +20,7 @@ const (
 	SLASH    = "/"
 	ASTERISK = "*"
 	ITERATE  = ".."
+	MOD      = "%"
 
 	// Comparison
 	EQUALS     = "=="
@@ -46,6 +47,7 @@ const (
 	MUT      = "MUT"
 	TRUE     = "TRUE"
 	FALSE    = "FALSE"
+	NULL     = "NULL"
 	IF       = "if"
 	ELSE     = "else"
 	RETURN   = "return"
@@ -80,6 +82,7 @@ var keywords = map[string]TokenType{
 	"in":       IN,
 	"break":    BREAK,
 	"continue": CONTINUE,
+	"null":     NULL,
 }
 
 func LookupIdentifier(identifier string) TokenType {

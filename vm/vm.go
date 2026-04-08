@@ -109,7 +109,7 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
-		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
+		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv, code.OpMod:
 			err := vm.executeBinaryOperation(op)
 			if err != nil {
 				return err
@@ -328,6 +328,8 @@ func (vm *VM) executeBinaryIntegerOperation(
 		result = leftValue * rightValue
 	case code.OpDiv:
 		result = leftValue / rightValue
+	case code.OpMod:
+		result = leftValue % rightValue
 	default:
 		return object.NewUnknownOperator(nil, fmt.Sprintf("%d", op), string(left.Type()), string(right.Type()), "")
 	}

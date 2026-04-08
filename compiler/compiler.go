@@ -245,6 +245,8 @@ func (c *Compiler) Compile(node ast.Node) *object.Error {
 			c.emit(code.OpMul)
 		case "/":
 			c.emit(code.OpDiv)
+		case "%":
+			c.emit(code.OpMod)
 		case ">":
 			c.emit(code.OpGreaterThan)
 		case "==":
@@ -261,6 +263,8 @@ func (c *Compiler) Compile(node ast.Node) *object.Error {
 		} else {
 			c.emit(code.OpFalse)
 		}
+	case *ast.Null:
+		c.emit(code.OpNull)
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))

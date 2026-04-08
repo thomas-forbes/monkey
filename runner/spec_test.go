@@ -34,6 +34,7 @@ func TestSpec(t *testing.T) {
 				{name: "grouped expression", input: "2 * (5 + 10)", expected: 30},
 				{name: "negative arithmetic", input: "-50 + 100 + -50", expected: 0},
 				{name: "operator precedence", input: "(5 + 10 * 2 + 15 / 3) * 2 + -10", expected: 50},
+				{name: "modulo", input: "10 % 3", expected: 1},
 			},
 		},
 		{
@@ -52,6 +53,7 @@ func TestSpec(t *testing.T) {
 				{name: "bang integer", input: "!5", expected: false},
 				{name: "double bang integer", input: "!!5", expected: true},
 				{name: "bang nullish if", input: "!(if (false) { 5; })", expected: true},
+				{name: "null", input: "if (true) { return null }", expected: nil},
 			},
 		},
 		{
@@ -248,6 +250,17 @@ func TestSpec(t *testing.T) {
 				{name: "recursive function", input: `let countDown = fn(x) { if x == 0 { return 0; } else { countDown(x - 1); } }; countDown(1);`, expected: 0},
 				{name: "recursive function in wrapper", input: `let countDown = fn(x) { if (x == 0) { return 0; } else { countDown(x - 1); } }; let wrapper = fn() { countDown(1); }; wrapper();`, expected: 0},
 				{name: "recursive fibonacci", input: `let fibonacci = fn(x) { if (x == 0) { return 0; } else { if (x == 1) { return 1; } else { fibonacci(x - 1) + fibonacci(x - 2); } } }; fibonacci(15);`, expected: 610},
+			},
+		},
+		{
+			name: "std",
+			cases: []specCase{
+				{name: "map", input: `let a = [1, 2, 3]; let double = fn(x) { x * 2 }; map(a, double);`, expected: []int{2, 4, 6}},
+				{name: "filter", input: `let a = [1, 2, 3]; let even = fn(x) { x % 2 == 0 }; filter(a, even);`, expected: []int{2}},
+				{name: "reduce", input: `let a = [1, 2, 3]; reduce(a, fn(acc, x) { acc + x }, 0);`, expected: 6},
+				{name: "find", input: `let a = [1, 2, 3, 4]; let even = fn(x) { x % 2 == 0 }; find(a, even);`, expected: 2},
+				{name: "find null", input: `let a = [1, 3, 5]; let even = fn(x) { x % 2 == 0 }; find(a, even);`, expected: nil},
+				{name: "findIndex", input: `let a = [1, 2, 3, 4]; let even = fn(x) { x % 2 == 0 }; findIndex(a, even);`, expected: 1},
 			},
 		},
 	}

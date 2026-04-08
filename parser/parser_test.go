@@ -1272,3 +1272,43 @@ func TestFunctionLiteralWithName(t *testing.T) {
 			function.Name)
 	}
 }
+
+func TestModulosOperator(t *testing.T) {
+	input := "5 % 2;"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d\n", 1, len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+	exp, ok := stmt.Expression.(*ast.InfixExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression is not ast.InfixExpression. got=%T", stmt.Expression)
+	}
+	if !testInfixExpression(t, exp, 5, "%", 2) {
+		return
+	}
+}
+
+func TestParseNull(t *testing.T) {
+	input := "null;"
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+	if len(program.Statements) != 1 {
+		t.Fatalf("program.Statements does not contain %d statements. got=%d\n", 1, len(program.Statements))
+	}
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt is not ast.ExpressionStatement. got=%T", program.Statements[0])
+	}
+	if _, ok := stmt.Expression.(*ast.Null); !ok {
+		t.Fatalf("stmt.Expression is not ast.Null. got=%T", stmt.Expression)
+	}
+}

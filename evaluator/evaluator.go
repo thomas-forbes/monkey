@@ -33,6 +33,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: node.Value}
 	case *ast.StringLiteral:
 		return &object.String{Value: node.Value}
+	case *ast.Null:
+		return object.NULL
 	case *ast.Boolean:
 		return nativeBoolToBooleanObject(node.Value)
 	case *ast.Identifier:
@@ -194,6 +196,8 @@ func evalIntegerInfixExpression(node *ast.InfixExpression, left, right object.Ob
 		return &object.Integer{Value: leftVal * rightVal}
 	case "/":
 		return &object.Integer{Value: leftVal / rightVal}
+	case "%":
+		return &object.Integer{Value: leftVal % rightVal}
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":

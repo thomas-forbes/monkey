@@ -93,6 +93,8 @@ func (l *Lexer) NextToken() token.Token {
 		}
 	case '*':
 		tok = newToken(token.ASTERISK, l.ch, startLine, startColumn, startOffset)
+	case '%':
+		tok = newToken(token.MOD, l.ch, startLine, startColumn, startOffset)
 	case '<':
 		tok = newToken(token.LESS, l.ch, startLine, startColumn, startOffset)
 	case '>':

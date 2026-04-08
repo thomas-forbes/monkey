@@ -31,6 +31,7 @@ var precedences = map[token.TokenType]int{
 	token.ITERATE:    ITERATE,
 	token.PLUS:       SUM,
 	token.MINUS:      SUM,
+	token.MOD:        PRODUCT,
 	token.SLASH:      PRODUCT,
 	token.ASTERISK:   PRODUCT,
 	token.LPAREN:     CALL,
@@ -65,6 +66,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.TRUE, p.parseBoolean)
 	p.registerPrefix(token.FALSE, p.parseBoolean)
+	p.registerPrefix(token.NULL, p.parseNull)
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
@@ -75,6 +77,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
+	p.registerInfix(token.MOD, p.parseInfixExpression)
 	p.registerInfix(token.SLASH, p.parseInfixExpression)
 	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
 	p.registerInfix(token.EQUALS, p.parseInfixExpression)
@@ -359,6 +362,10 @@ func (p *Parser) parseAssignExpression(left ast.Expression) ast.Expression {
 
 func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{Token: p.curToken(), Value: p.curToken().Type == token.TRUE}
+}
+
+func (p *Parser) parseNull() ast.Expression {
+	return &ast.Null{Token: p.curToken()}
 }
 
 func (p *Parser) parseGroupedExpression() ast.Expression {
