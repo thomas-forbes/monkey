@@ -258,7 +258,15 @@ addOne(4);`, expected: 5},
 			for _, tt := range group.cases {
 				for _, engine := range engines {
 					t.Run(fmt.Sprintf("%s/%s", engine, tt.name), func(t *testing.T) {
-						result, _ := RunProgram(engine, tt.input, NewSession(engine))
+						program, err := ParseCode(tt.input)
+						if err != nil {
+							t.Fatalf("failed to parse code: %v", err)
+						}
+						session, err := NewSession(engine)
+						if err != nil {
+							t.Fatalf("failed to create session: %v", err)
+						}
+						result, _ := session.ExecProgram(program)
 						assertExpectedObject(t, tt.expected, result)
 					})
 				}

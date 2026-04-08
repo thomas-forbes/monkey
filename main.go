@@ -32,7 +32,11 @@ func main() {
 
 func startRepl(engine runner.Engine, in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
-	session := runner.NewSession(engine)
+	session, err := runner.NewSession(engine)
+	if err != nil {
+		fmt.Fprintf(out, "Error initializing session: %s\n", err)
+		return
+	}
 	fmt.Fprintf(out, "Running Monkey REPL with %s engine\n", engine)
 
 	for {
@@ -41,7 +45,12 @@ func startRepl(engine runner.Engine, in io.Reader, out io.Writer) {
 			return
 		}
 
-		result, _ := runner.RunProgram(engine, scanner.Text(), session)
+		program, err := runner.ParseCode(scanner.Text())
+		if err != nil {
+			fmt.Fprintf(out, "Error parsing code: %s\n", err)
+			continue
+		}
+		result, _ := session.ExecProgram(program)
 
 		if result != nil {
 			io.WriteString(out, result.Inspect())
@@ -57,8 +66,18 @@ func startFile(engine runner.Engine, fileName string, out io.Writer) {
 		return
 	}
 
-	session := runner.NewSession(engine)
-	result, duration := runner.RunProgram(engine, string(data), session)
+	program, errResult := runner.ParseCode(string(data))
+	if errResult != nil {
+		fmt.Fprintf(out, "Error parsing code: %s\n", errResult)
+		return
+	}
+
+	session, errResult := runner.NewSession(engine)
+	if errResult != nil {
+		fmt.Fprintf(out, "Error initializing session: %s\n", errResult)
+		return
+	}
+	result, duration := session.ExecProgram(program)
 	if result == nil {
 		result = object.NULL
 	}
