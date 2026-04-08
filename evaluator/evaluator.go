@@ -223,7 +223,8 @@ func evalStringInfixExpression(node *ast.InfixExpression, left, right object.Obj
 func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
 	for _, branch := range ie.Branches {
 		if branch.Condition == nil {
-			return Eval(branch.Body, env)
+			branchEnv := object.NewEnclosedEnvironment(env)
+			return Eval(branch.Body, branchEnv)
 		}
 
 		condition := Eval(branch.Condition, env)
@@ -231,7 +232,8 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 			return condition
 		}
 		if isTruthy(condition) {
-			return Eval(branch.Body, env)
+			branchEnv := object.NewEnclosedEnvironment(env)
+			return Eval(branch.Body, branchEnv)
 		}
 	}
 	return object.NULL
@@ -393,10 +395,10 @@ func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Ob
 		return val
 	}
 	name := node.Initialization.Name.Value
-	if entity, ok := env.Get(name); ok && entity != object.NULL_ENTITY {
+	_, ok := env.Set(name, val, node.Initialization.Mutable, true)
+	if !ok {
 		return object.NewCannotReinitializeVariable(&node.Initialization.Name.Token, name)
 	}
-	env.Set(name, val, node.Initialization.Mutable, true)
 	return object.NULL
 }
 

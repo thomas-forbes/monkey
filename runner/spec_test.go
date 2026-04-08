@@ -157,6 +157,7 @@ func TestSpec(t *testing.T) {
 				{name: "else if branch", input: "if (1 > 2) { 10 } else if (1 < 2) { 20 } else { 30 }", expected: 20},
 				{name: "final else branch", input: "if 1 > 2 { 10 } else if (1 > 2) { 20 } else { 30 }", expected: 30},
 				{name: "nested if falsey", input: "if ((if (false) { 10 })) { 10 } else { 20 }", expected: 20},
+				{name: "local scope in if", input: "let x = 10; if true { let x = 20; } x;", expected: 10},
 			},
 		},
 		{
