@@ -85,6 +85,10 @@ const (
 
 	OpClosure
 	OpCurrentClosure
+
+	OpRange
+	OpIter
+	OpIterNext
 )
 
 func (o Opcode) String() string {
@@ -143,6 +147,10 @@ var definitions = map[Opcode]*Definition{
 
 	OpClosure:        {"OpClosure", []int{2, 1}},
 	OpCurrentClosure: {"OpCurrentClosure", []int{}},
+
+	OpRange:    {"OpRange", []int{}},
+	OpIter:     {"OpIter", []int{}},
+	OpIterNext: {"OpIterNext", []int{1}},
 }
 
 func Lookup(op byte) (*Definition, error) {

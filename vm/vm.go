@@ -268,6 +268,29 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpRange:
+			right := vm.pop()
+			left := vm.pop()
+			if left.Type() != object.INTEGER_OBJ || right.Type() != object.INTEGER_OBJ {
+				return object.NewUnsupportedBinaryOperation(nil, string(left.Type()), string(right.Type()))
+			}
+			vm.push(&object.Range{Left: left.(*object.Integer).Value, Right: right.(*object.Integer).Value})
+		case code.OpIterNext:
+			params := int(code.ReadUint8(ins[ip+1:]))
+			vm.currentFrame().ip += 1
+
+			collection := vm.stack[vm.sp-1]
+
+			switch collection.(type) {
+			case *object.Array:
+			case *object.Range:
+				for range params {
+					vm.push(&object.Integer{Value: 0})
+				}
+				vm.push(&object.Boolean{Value: false})
+			default:
+				panic("")
+			}
 		}
 	}
 	return nil

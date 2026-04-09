@@ -105,20 +105,45 @@ func (c *Compiler) Compile(node ast.Node) *object.Error {
 		// hacky solution to anchor continue instruction pointing to 0
 		c.enterScope()
 		c.symbolTable = c.symbolTable.Outer
+		c.enterBlock()
+		// TODO: make enterBlock/leaveBlock also handle the instruction pointing and normalization
 
+		bodyPos := 0
 		switch clause := node.Clause.(type) {
 		case *ast.ForInClause:
-			panic("for-in loops not implemented")
+			err := c.Compile(clause.Iterable)
+			if err != nil {
+				return err
+			}
+			pos := c.emit(code.OpIterNext, -1)
+			bodyPos = c.emit(code.OpJumpNotTruthy, -1)
+
+			params := 0
+			if clause.Key != nil {
+				params++
+				symbol, ok := c.symbolTable.Define(clause.Key.Value, false)
+				if !ok {
+					return object.NewCannotReinitializeVariable(&clause.Key.Token, clause.Key.Value)
+				}
+				c.setSymbol(symbol)
+			}
+			if clause.Value != nil {
+				params++
+				symbol, ok := c.symbolTable.Define(clause.Value.Value, false)
+				if !ok {
+					return object.NewCannotReinitializeVariable(&clause.Value.Token, clause.Value.Value)
+				}
+				c.setSymbol(symbol)
+			}
+			c.changeOperand(pos, params)
 		case *ast.ForConditionalClause:
 			err := c.Compile(clause.Condition)
 			if err != nil {
 				return err
 			}
+			bodyPos = c.emit(code.OpJumpNotTruthy, -1)
 		}
 
-		conditionPos := c.emit(code.OpJumpNotTruthy, -1)
-
-		c.enterBlock()
 		err := c.Compile(node.Body)
 		if err != nil {
 			return err
@@ -126,7 +151,7 @@ func (c *Compiler) Compile(node ast.Node) *object.Error {
 		c.leaveBlock()
 
 		c.emit(code.OpJump, 0)
-		c.changeOperand(conditionPos, len(c.currentInstructions()))
+		c.changeOperand(bodyPos, len(c.currentInstructions()))
 
 		c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)
 		instructions := c.leaveScope()
@@ -260,6 +285,16 @@ func (c *Compiler) Compile(node ast.Node) *object.Error {
 		default:
 			return object.NewUnknownOperator(&node.Token, node.Operator, "", "", "")
 		}
+	case *ast.RangeExpression:
+		err := c.Compile(node.Left)
+		if err != nil {
+			return err
+		}
+		err = c.Compile(node.Right)
+		if err != nil {
+			return err
+		}
+		c.emit(code.OpRange)
 
 	case *ast.Boolean:
 		if node.Value {

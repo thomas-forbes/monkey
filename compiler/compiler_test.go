@@ -1145,11 +1145,11 @@ func TestBlockScopedIf(t *testing.T) {
 				code.Make(code.OpSetLocal, 0),
 				// if true
 				code.Make(code.OpTrue),
-				code.Make(code.OpJumpNotTruthy, 16),
+				code.Make(code.OpJumpNotTruthy, 19),
 				// let x = 20 (block-local, index 1)
 				code.Make(code.OpConstant, 1),
 				code.Make(code.OpSetLocal, 1),
-				code.Make(code.OpJump, 17),
+				code.Make(code.OpJump, 20),
 				// else: null
 				code.Make(code.OpNull),
 				// pop if result
@@ -1169,12 +1169,12 @@ func TestBlockScopedIf(t *testing.T) {
 				code.Make(code.OpSetLocal, 0),
 				// if true
 				code.Make(code.OpTrue),
-				code.Make(code.OpJumpNotTruthy, 19),
+				code.Make(code.OpJumpNotTruthy, 22),
 				// x = 2 (assigns to outer x at index 0)
 				code.Make(code.OpConstant, 1),
 				code.Make(code.OpSetLocal, 0),
 				code.Make(code.OpGetLocal, 0),
-				code.Make(code.OpJump, 20),
+				code.Make(code.OpJump, 23),
 				// else: null
 				code.Make(code.OpNull),
 				// pop if result
@@ -1221,6 +1221,75 @@ func TestConditionalForStatements(t *testing.T) {
 				code.Make(code.OpClosure, 1, 0),
 				code.Make(code.OpCall, 0),
 				code.Make(code.OpPop),
+			},
+		},
+	}
+
+	runCompilerTests(t, tests)
+}
+
+func TestForInStatements(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input:             "for i in 0..5 { 10; }",
+			expectedConstants: []interface{}{0, 5, 10},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpRange),
+				code.Make(code.OpIterNext, 1),
+				code.Make(code.OpJumpNotTruthy, 22),
+				code.Make(code.OpSetLocal, 0),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+				code.Make(code.OpJump, 0),
+			},
+		},
+		{
+			input:             "for i in [1, 2] { 10; }",
+			expectedConstants: []interface{}{1, 2, 10},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpArray, 2),
+				code.Make(code.OpIterNext, 1),
+				code.Make(code.OpJumpNotTruthy, 24),
+				code.Make(code.OpSetLocal, 0),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+				code.Make(code.OpJump, 0),
+			},
+		},
+		{
+			input:             "for i, x in [1, 2] { 10; }",
+			expectedConstants: []interface{}{1, 2, 10},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpArray, 2),
+				code.Make(code.OpIterNext, 2),
+				code.Make(code.OpJumpNotTruthy, 27),
+				code.Make(code.OpSetLocal, 0),
+				code.Make(code.OpSetLocal, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+				code.Make(code.OpJump, 0),
+			},
+		},
+		{
+			input:             "for k, v in {1: 2} { 10; }",
+			expectedConstants: []interface{}{1, 2, 10},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpHash, 2),
+				code.Make(code.OpIterNext, 2),
+				code.Make(code.OpJumpNotTruthy, 27),
+				code.Make(code.OpSetLocal, 0),
+				code.Make(code.OpSetLocal, 1),
+				code.Make(code.OpConstant, 2),
+				code.Make(code.OpPop),
+				code.Make(code.OpJump, 0),
 			},
 		},
 	}

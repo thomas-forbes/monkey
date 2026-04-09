@@ -219,7 +219,7 @@ type Range struct {
 }
 
 func (i *Range) Type() ObjectType { return RANGE_OBJ }
-func (i *Range) Inspect() string  { return fmt.Sprintf("%d..%d", i.Right, i.Left) }
+func (i *Range) Inspect() string  { return fmt.Sprintf("%d..%d", i.Left, i.Right) }
 
 type CompiledFunction struct {
 	Instructions  code.Instructions
