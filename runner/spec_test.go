@@ -344,6 +344,15 @@ func TestSpec(t *testing.T) {
 			},
 		},
 		{
+			name: "scope",
+			cases: []specCase{
+				{name: "if shadowing", input: "let x = 10; if true { let mut x = 20; x = 15; } x;", expected: 10},
+				{name: "if mutability", input: "let mut x = 10; if true { x = 20; } x;", expected: 20},
+				{name: "closure mutability", input: "let main = fn() { let mut x = 5; return fn() { x = x + 5; x; } }; let increaseX = main(); increaseX(); increaseX();", expected: 15},
+				{name: "global mutability", input: "let mut x = 10; let changeX = fn() { x = 20; }; changeX(); x;", expected: 20},
+			},
+		},
+		{
 			name: "std arrays",
 			cases: []specCase{
 				{name: "map", input: `let a = [1, 2, 3]; let double = fn(x) { x * 2 }; map(a, double);`, expected: []int{2, 4, 6}},
@@ -377,8 +386,8 @@ func TestSpec(t *testing.T) {
 		},
 	}
 
-	// engines := []Engine{INTERPRETER, VM}
-	engines := []Engine{INTERPRETER}
+	engines := []Engine{INTERPRETER, VM}
+	// engines := []Engine{INTERPRETER}
 
 	for _, group := range groups {
 		t.Run(group.name, func(t *testing.T) {

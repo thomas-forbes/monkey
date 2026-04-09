@@ -236,6 +236,12 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+		case code.OpSetFree:
+			freeIndex := code.ReadUint16(ins[ip+1:])
+			vm.currentFrame().ip += 2
+
+			currentClosure := vm.currentFrame().cl
+			currentClosure.Free[freeIndex] = vm.pop()
 		case code.OpCall:
 			numArgs := code.ReadUint8(ins[ip+1:])
 			vm.currentFrame().ip += 1

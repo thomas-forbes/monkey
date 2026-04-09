@@ -118,10 +118,12 @@ func (c *Compiler) Compile(node ast.Node) *object.Error {
 
 		conditionPos := c.emit(code.OpJumpNotTruthy, -1)
 
+		c.enterBlock()
 		err := c.Compile(node.Body)
 		if err != nil {
 			return err
 		}
+		c.leaveBlock()
 
 		c.emit(code.OpJump, 0)
 		c.changeOperand(conditionPos, len(c.currentInstructions()))
@@ -182,7 +184,9 @@ func (c *Compiler) Compile(node ast.Node) *object.Error {
 
 			conditionPos := c.emit(code.OpJumpNotTruthy, -1)
 
+			c.enterBlock()
 			err := c.Compile(branch.Body)
+			c.leaveBlock()
 			if c.lastInstructionIs(code.OpPop) {
 				c.removeLastInstruction()
 			}
@@ -472,6 +476,17 @@ func (c *Compiler) leaveScope() code.Instructions {
 	c.symbolTable = c.symbolTable.Outer
 
 	return instructions
+}
+
+func (c *Compiler) enterBlock() {
+	c.symbolTable = NewBlockSymbolTable(c.symbolTable)
+}
+
+func (c *Compiler) leaveBlock() {
+	if c.symbolTable.numDefinitions > c.symbolTable.Outer.numDefinitions {
+		c.symbolTable.Outer.numDefinitions = c.symbolTable.numDefinitions
+	}
+	c.symbolTable = c.symbolTable.Outer
 }
 
 func (c *Compiler) getSymbol(s Symbol) {

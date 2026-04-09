@@ -218,6 +218,134 @@ func TestDefineAndResolveFunctionName(t *testing.T) {
 	}
 }
 
+func TestBlockScope(t *testing.T) {
+	outer := NewMasterSymbolTable()
+	outer.Define("a", false)
+	outer.Define("b", false)
+
+	block := NewBlockSymbolTable(outer)
+
+	// resolving outer symbols from block returns LocalScope, not FreeScope
+	result, ok := block.Resolve("a")
+	if !ok {
+		t.Fatalf("name a not resolvable")
+	}
+	if result != (Symbol{Name: "a", Scope: LocalScope, Index: 0}) {
+		t.Errorf("expected a=%+v, got=%+v", Symbol{Name: "a", Scope: LocalScope, Index: 0}, result)
+	}
+
+	// block should not generate free symbols
+	if len(block.FreeSymbols) != 0 {
+		t.Errorf("expected no free symbols, got=%d", len(block.FreeSymbols))
+	}
+
+	// definitions in block continue index from outer
+	c, ok := block.Define("c", false)
+	if !ok {
+		t.Fatalf("expected define(c) to succeed")
+	}
+	if c != (Symbol{Name: "c", Scope: LocalScope, Index: 2}) {
+		t.Errorf("expected c=%+v, got=%+v", Symbol{Name: "c", Scope: LocalScope, Index: 2}, c)
+	}
+}
+
+func TestBlockScopeShadowing(t *testing.T) {
+	outer := NewMasterSymbolTable()
+	outer.Define("x", false) // index 0
+
+	block := NewBlockSymbolTable(outer)
+	x, ok := block.Define("x", false) // shadows outer x, gets new index
+	if !ok {
+		t.Fatalf("expected define(x) to succeed in block")
+	}
+	if x.Index != 1 {
+		t.Errorf("expected shadowed x to have index 1, got=%d", x.Index)
+	}
+
+	// resolving x in block returns the block-local one
+	resolved, ok := block.Resolve("x")
+	if !ok {
+		t.Fatalf("name x not resolvable in block")
+	}
+	if resolved.Index != 1 {
+		t.Errorf("expected block x to resolve to index 1, got=%d", resolved.Index)
+	}
+
+	// resolving x in outer still returns index 0
+	resolved, ok = outer.Resolve("x")
+	if !ok {
+		t.Fatalf("name x not resolvable in outer")
+	}
+	if resolved.Index != 0 {
+		t.Errorf("expected outer x to resolve to index 0, got=%d", resolved.Index)
+	}
+}
+
+func TestBlockScopeHighWaterMark(t *testing.T) {
+	outer := NewMasterSymbolTable()
+	outer.Define("a", false) // index 0
+
+	block := NewBlockSymbolTable(outer)
+	block.Define("b", false) // index 1
+	block.Define("c", false) // index 2
+
+	// simulate leaveBlock
+	if block.numDefinitions > outer.numDefinitions {
+		outer.numDefinitions = block.numDefinitions
+	}
+
+	if outer.numDefinitions != 3 {
+		t.Errorf("expected outer numDefinitions=3, got=%d", outer.numDefinitions)
+	}
+
+	// new definition in outer continues from high-water-mark
+	d, ok := outer.Define("d", false)
+	if !ok {
+		t.Fatalf("expected define(d) to succeed")
+	}
+	if d.Index != 3 {
+		t.Errorf("expected d to have index 3, got=%d", d.Index)
+	}
+}
+
+func TestBlockScopeInFunction(t *testing.T) {
+	global := NewMasterSymbolTable()
+	global.Define("a", false)
+
+	fn := NewEnclosedSymbolTable(global)
+	fn.Define("b", false)
+
+	block := NewBlockSymbolTable(fn)
+	block.Define("c", false)
+
+	// c is local to the function frame
+	result, ok := block.Resolve("c")
+	if !ok {
+		t.Fatalf("name c not resolvable")
+	}
+	if result.Scope != LocalScope {
+		t.Errorf("expected c to have LocalScope, got=%s", result.Scope)
+	}
+
+	// a is free (crosses function boundary)
+	result, ok = block.Resolve("a")
+	if !ok {
+		t.Fatalf("name a not resolvable")
+	}
+	if result.Scope != FreeScope {
+		t.Errorf("expected a to have FreeScope, got=%s", result.Scope)
+	}
+
+	// b is local (same function frame, crosses block boundary)
+	result, ok = block.Resolve("b")
+	if !ok {
+		t.Fatalf("name b not resolvable")
+	}
+	if result.Scope != LocalScope {
+		t.Errorf("expected b to have LocalScope, got=%s", result.Scope)
+	}
+}
+
 func TestShadowingFunctionName(t *testing.T) {
 	global := NewMasterSymbolTable()
 	global.DefineFunctionName("a")

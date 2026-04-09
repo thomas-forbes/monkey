@@ -1132,6 +1132,62 @@ func TestRecursiveFunctions(t *testing.T) {
 	runCompilerTests(t, tests)
 }
 
+func TestBlockScopedIf(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			// let x inside the if gets a separate local slot (index 1),
+			// so the outer x (index 0) is preserved
+			input:             "let x = 10; if true { let x = 20; } x;",
+			expectedConstants: []interface{}{10, 20},
+			expectedInstructions: []code.Instructions{
+				// let x = 10
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetLocal, 0),
+				// if true
+				code.Make(code.OpTrue),
+				code.Make(code.OpJumpNotTruthy, 16),
+				// let x = 20 (block-local, index 1)
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSetLocal, 1),
+				code.Make(code.OpJump, 17),
+				// else: null
+				code.Make(code.OpNull),
+				// pop if result
+				code.Make(code.OpPop),
+				// x (outer, index 0)
+				code.Make(code.OpGetLocal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			// mutation of outer variable from within if block
+			input:             "let mut x = 1; if true { x = 2; } x;",
+			expectedConstants: []interface{}{1, 2},
+			expectedInstructions: []code.Instructions{
+				// let mut x = 1
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetLocal, 0),
+				// if true
+				code.Make(code.OpTrue),
+				code.Make(code.OpJumpNotTruthy, 19),
+				// x = 2 (assigns to outer x at index 0)
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSetLocal, 0),
+				code.Make(code.OpGetLocal, 0),
+				code.Make(code.OpJump, 20),
+				// else: null
+				code.Make(code.OpNull),
+				// pop if result
+				code.Make(code.OpPop),
+				// x
+				code.Make(code.OpGetLocal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+	runCompilerTests(t, tests)
+}
+
 func TestConditionalForStatements(t *testing.T) {
 	tests := []compilerTestCase{
 		{

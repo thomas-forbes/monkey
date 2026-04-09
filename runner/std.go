@@ -115,4 +115,5 @@ let pow = fn(x, n) {
 };
 `
 
-const STD = ARRAYS + MATH
+// const STD = ARRAYS + MATH
+const STD = ""

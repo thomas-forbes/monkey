@@ -24,6 +24,7 @@ type SymbolTable struct {
 
 	store          map[string]Symbol
 	numDefinitions int
+	isBlock        bool
 }
 
 func newSymbolTable() *SymbolTable {
@@ -46,6 +47,14 @@ func NewEnclosedSymbolTable(outer *SymbolTable) *SymbolTable {
 	return s
 }
 
+func NewBlockSymbolTable(outer *SymbolTable) *SymbolTable {
+	s := newSymbolTable()
+	s.Outer = outer
+	s.isBlock = true
+	s.numDefinitions = outer.numDefinitions
+	return s
+}
+
 func (s *SymbolTable) Define(name string, mutable bool) (Symbol, bool) {
 	symbol := Symbol{Name: name, Scope: LocalScope, Index: s.numDefinitions, Mutable: mutable}
 	if _, ok := s.store[name]; ok {
@@ -63,7 +72,7 @@ func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
 		if !ok {
 			return obj, ok
 		}
-		if obj.Scope == BuiltinScope {
+		if obj.Scope == BuiltinScope || s.isBlock {
 			return obj, ok
 		}
 
